@@ -1,0 +1,40 @@
+﻿@page "/prices"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.SignalR.Client;
+@inject NavigationManager Navigation;
+
+
+<h1>Prices</h1>
+
+@foreach (var price in prices)
+{
+    <p>@price</p>
+}
+
+@code {
+    private List<decimal?> prices = new List<decimal?>();
+    private HubConnection? hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
+            .Build();
+
+        hubConnection.On<decimal>("ReceivePriceUpdate", (price) =>
+        {
+            prices.Add(price);
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+
+    // Methode zum Behandeln von PriceUpdated-Ereignissen
+    private async void HandlePriceUpdated(object sender, decimal? price)
+    {
+        prices.Add(price);
+        StateHasChanged();
+    }
+}
