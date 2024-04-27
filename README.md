@@ -7,7 +7,7 @@
 A small simulated cryptocurrency trading platform.
 
 ## Visuals
-![Architectural Design](assets/IeCAG.drawio.png "Architectural Design")
+![Architectural Design](assets/IeCAG_for_light_theme_nerds.jpg "Architectural Design")
 
 ## Usage
 
