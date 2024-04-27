@@ -1,8 +1,13 @@
-# IeCAG
+<div align="center">
+  <h1>IeCAG</h1>
+  <img src="assets/Logo_IeCAG.png" alt="logo" width="400"/>
+</div>
 
 ## Description
+A small simulated cryptocurrency trading platform.
 
 ## Visuals
+![Architectural Design](assets/IeCAG.drawio.png "Architectural Design")
 
 ## Usage
 
