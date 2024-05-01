@@ -10,8 +10,8 @@ public class PricesHub : Hub
         _dataFetcherService = dataFetcherService;
     }
 
-    public async Task SendPriceUpdate(decimal? price)
+    public async Task SendPriceUpdate(string symbol, decimal? price)
     {
-        await Clients.All.SendAsync("ReceivePriceUpdate", price);
+        await Clients.All.SendAsync("ReceivePriceUpdate", symbol, price);
     }
 }

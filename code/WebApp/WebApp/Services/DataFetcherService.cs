@@ -18,7 +18,7 @@ namespace WebApp.Services
         {
             _httpClient = httpClient;
             _hubContext = hubContext;
-            _timer = new Timer(TimerCallback, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+            _timer = new Timer(TimerCallback, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
         }
 
         private async void TimerCallback(object state)
@@ -26,13 +26,13 @@ namespace WebApp.Services
             lock (_lock)
             {
                 // Code to fetch data from backend
-                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/crypto-com-chain");
-                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/bitcoin");
-                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/ethereum");
+                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/crypto-com-chain", "CRO");
+                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/bitcoin", "BTC");
+                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/ethereum", "ETH");
             }
         }
 
-        public async Task FetchPriceFromBackend(string url)
+        public async Task FetchPriceFromBackend(string url, string symbol)
         {
             try
             {
@@ -44,11 +44,12 @@ namespace WebApp.Services
                     string responseData = await response.Content.ReadAsStringAsync();
                     var obj = JsonSerializer.Deserialize<CoinGeckoResponse>(responseData);
                     decimal? price = obj?.market_data?.current_price?.eur;
-                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", price);
+                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", symbol, price);
                 }
                 else
                 {
-                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", 10);
+                    Random random = new Random();
+                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", symbol, random.Next(5,1000));
                     Console.WriteLine($"Failed to fetch data from {url}. Status code: {response.StatusCode}");
                 }
             }

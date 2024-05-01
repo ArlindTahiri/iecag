@@ -3,16 +3,15 @@
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation;
 
-
 <h1>Prices</h1>
 
-@foreach (var price in prices)
+@foreach (var priceEntry in priceEntries)
 {
-    <p>@price</p>
+    <p>@priceEntry.Symbol: @priceEntry.Price</p>
 }
 
 @code {
-    private List<decimal?> prices = new List<decimal?>();
+    private List<PriceEntry> priceEntries = new List<PriceEntry>();
     private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
@@ -21,20 +20,26 @@
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
             .Build();
 
-        hubConnection.On<decimal>("ReceivePriceUpdate", (price) =>
+        hubConnection.On<string, decimal?>("ReceivePriceUpdate", (symbol, price) =>
         {
-            prices.Add(price);
+            var existingEntry = priceEntries.FirstOrDefault(entry => entry.Symbol == symbol);
+            if (existingEntry != null)
+            {
+                existingEntry.Price = price; // Aktualisiere den Preis des vorhandenen Eintrags
+            }
+            else
+            {
+                priceEntries.Add(new PriceEntry { Symbol = symbol, Price = price }); // Füge einen neuen Eintrag hinzu, wenn das Symbol noch nicht vorhanden ist
+            }
             InvokeAsync(StateHasChanged);
         });
 
         await hubConnection.StartAsync();
     }
 
-
-    // Methode zum Behandeln von PriceUpdated-Ereignissen
-    private async void HandlePriceUpdated(object sender, decimal? price)
+    public class PriceEntry
     {
-        prices.Add(price);
-        StateHasChanged();
+        public string Symbol { get; set; }
+        public decimal? Price { get; set; }
     }
 }
