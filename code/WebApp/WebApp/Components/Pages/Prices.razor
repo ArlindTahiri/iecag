@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation;
+@using WebApp.Components.SubComponents;
 
 <h1>Prices</h1>
 
@@ -10,7 +11,20 @@
     <p>@priceEntry.Symbol: @priceEntry.Price</p>
 }
 
+<PriceChart Prices="@Priceslol" />
+
 @code {
+    public Dictionary<DateTime, decimal> Priceslol { get; set; } = new Dictionary<DateTime, decimal>
+{
+    { DateTime.Now.AddMinutes(-30), 48000 },
+    { DateTime.Now.AddMinutes(-25), 48500 },
+    { DateTime.Now.AddMinutes(-20), 49000 },
+    { DateTime.Now.AddMinutes(-15), 49500 },
+    { DateTime.Now.AddMinutes(-10), 50000 },
+    { DateTime.Now.AddMinutes(-5), 50500 },
+    { DateTime.Now, 51000 } // Aktueller Zeitpunkt
+};
+
     private List<PriceEntry> priceEntries = new List<PriceEntry>();
     private HubConnection? hubConnection;
 
@@ -26,6 +40,10 @@
             if (existingEntry != null)
             {
                 existingEntry.Price = price; // Aktualisiere den Preis des vorhandenen Eintrags
+                if (symbol.Equals("BTC"))
+                {
+                    Priceslol.Add(DateTime.Now, (decimal)price);
+                }
             }
             else
             {
