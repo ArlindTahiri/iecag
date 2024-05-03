@@ -1,7 +1,65 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.SignalR.Client;
+@inject NavigationManager Navigation;
+@using WebApp.Components.SubComponents;
 
-<PageTitle>Home</PageTitle>
+<h1>Prices</h1>
 
-<h1>Hello, world!</h1>
+@foreach (var priceEntry in priceEntries)
+{
+    <p>@priceEntry.Symbol: @priceEntry.Price</p>
+}
 
-Welcome to your new app.
+<PriceChart Prices="Priceslol" @ref="priceChart" />
+
+@code {
+    PriceChart priceChart;
+
+    public Dictionary<DateTime, decimal> Priceslol { get; set; } = new Dictionary<DateTime, decimal>
+{
+    { DateTime.Now.AddMinutes(-30), 48000 },
+    { DateTime.Now.AddMinutes(-25), 48500 },
+    { DateTime.Now.AddMinutes(-20), 49000 },
+    { DateTime.Now.AddMinutes(-15), 49500 },
+    { DateTime.Now.AddMinutes(-10), 50000 },
+    { DateTime.Now.AddMinutes(-5), 50500 },
+    { DateTime.Now, 51000 } // Aktueller Zeitpunkt
+};
+
+    private List<PriceEntry> priceEntries = new List<PriceEntry>();
+    private HubConnection? hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
+            .Build();
+
+        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (symbol, price) =>
+        {
+            var existingEntry = priceEntries.FirstOrDefault(entry => entry.Symbol == symbol);
+            if (existingEntry != null)
+            {
+                existingEntry.Price = price; // Aktualisiere den Preis des vorhandenen Eintrags
+                if (symbol.Equals("BTC"))
+                {
+                    await priceChart.UpdateChart(DateTime.Now, (decimal)price);
+                }
+            }
+            else
+            {
+                priceEntries.Add(new PriceEntry { Symbol = symbol, Price = price }); // Füge einen neuen Eintrag hinzu, wenn das Symbol noch nicht vorhanden ist
+            }
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    public class PriceEntry
+    {
+        public string Symbol { get; set; }
+        public decimal? Price { get; set; }
+    }
+}

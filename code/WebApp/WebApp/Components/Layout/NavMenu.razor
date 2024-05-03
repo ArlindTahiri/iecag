@@ -1,36 +1,72 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿
+<nav class="navbar navbar-dark bg-dark fixed-top">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">WebApp</a>
+        <a class="navbar-brand" href="" @onclick='(() => SetActivePage("Home"))' style="display:flex; align-items: center; justify-content: center;">
+            <img src="/favicon.png" alt="Logo" width="30" height="30" class="d-inline-block align-text-top" style="border-radius:100%">
+            <span style="margin:0 10px;">IeCAG - Portfolio</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasDarkNavbar" aria-controls="offcanvasDarkNavbar" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="offcanvas offcanvas-end text-bg-dark" tabindex="-1" id="offcanvasDarkNavbar" aria-labelledby="offcanvasDarkNavbarLabel">
+            <div class="offcanvas-header">
+                <h3 class="offcanvas-title" id="offcanvasDarkNavbarLabel">IeCAG</h3>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+
+            <div class="offcanvas-body">
+                <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
+                    <li class="nav-item">
+                        <a class="nav-link @(activePage == "Home" ? "active" : "")" href="" @onclick='(() => SetActivePage("Home"))'>Home</a>
+                    </li>
+                </ul>
+
+                <hr>
+
+                <ul class="navbar-nav align-items-end justify-content-end flex-grow-1 pe-3">
+                    <li class="nav-item">
+                        <a class="nav-link @(activePage == "Impressum" ? "active" : "")" href="Impressum" @onclick='(() => SetActivePage("Impressum"))'>Impressum</a>
+                    </li>
+                </ul>
+
+            </div>
+        </div>
     </div>
-</div>
+</nav>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+@code {
+    private string activePage; // Set the default active page
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+    protected override void OnInitialized()
+    {
+        activePage = GetLastSegment(NavigationManager.Uri);
+    }
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="prices">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Prices
-            </NavLink>
-        </div>
-    </nav>
-</div>
+    private void SetActivePage(string page)
+    {
+        activePage = page;
+    }
 
+    private string GetLastSegment(string uri)
+    {
+        if (string.IsNullOrEmpty(uri))
+        {
+            return "Home";
+        }
+
+        var uriSegments = new Uri(uri).Segments;
+
+        // If the last segment is "/" or empty, consider the second-to-last segment
+        if (uriSegments.Length > 0 && (uriSegments[^1] == "/" || string.IsNullOrEmpty(uriSegments[^1])))
+        {
+            return uriSegments.Length > 1 ? uriSegments[^2] : "Home";
+        }
+
+        return uriSegments.Length > 0 ? uriSegments[^1] : "Home";
+    }
+
+}

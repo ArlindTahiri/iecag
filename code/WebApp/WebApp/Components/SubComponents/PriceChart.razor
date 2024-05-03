@@ -8,7 +8,7 @@
 <script>
     window.createPriceChart = (labels, data) => {
         var ctx = document.getElementById('priceChart').getContext('2d');
-        var myChart = new Chart(ctx, {
+        var myChart = new Chart('priceChart', {
             type: 'line',
             data: {
                 labels: labels,
@@ -51,10 +51,22 @@
             }
         });
     };
+
+    window.addData = (chartId, labels, newData) => {
+        console.log('addData function is executing.'); // Log für Ausführung der Funktion
+        try {
+            var chart = document.getElementById('priceChart').getContext('2d');
+            console.log(chart);
+            chart.config.data.labels = labels;
+            chart.config.data.datasets[0].data = newData;
+            chart.update();
+        } catch (error) {
+            console.error('An error occurred in addData function:', error); // Fehlermeldung in der Konsole anzeigen
+        }
+    }
 </script>
 
 @code {
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -63,11 +75,23 @@
         }
     }
 
-    public async Task UpdateChart(Dictionary<DateTime, decimal> prices)
+
+    public async Task CreatePriceChart()
     {
-        // Erstelle ein neues Diagramm mit den aktualisierten Preisen
-        await JSRuntime.InvokeVoidAsync("createPriceChart", prices.Keys.ToArray(), prices.Values.ToArray());
+        if (Prices != null && Prices.Count > 0)
+        {
+            await JSRuntime.InvokeVoidAsync("createPriceChart", Prices.Keys.ToArray(), Prices.Values.ToArray());
+        }
     }
+
+    public async Task UpdateChart(DateTime dateTime, decimal price)
+    {
+        Prices.Add(dateTime, (decimal)price);
+        // Erstelle ein neues Diagramm mit den aktualisierten Preisen
+        await JSRuntime.InvokeVoidAsync("addData", "priceChart", Prices.Keys.ToArray(), Prices.Values.ToArray());
+    }
+
+
 
     [Inject]
     public IJSRuntime JSRuntime { get; set; }
