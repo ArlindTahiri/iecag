@@ -49,7 +49,7 @@ namespace WebApp.Services
                 else
                 {
                     Random random = new Random();
-                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", symbol, random.Next(5,1000));
+                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", symbol, random.Next(50000, 51000));
                     Console.WriteLine($"Failed to fetch data from {url}. Status code: {response.StatusCode}");
                 }
             }

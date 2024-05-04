@@ -1,14 +1,14 @@
 ﻿<!-- In deiner Blazor-Komponente -->
 <div>
-    <canvas id="priceChart"></canvas>
+    <canvas id="@Symbol"></canvas>
 </div>
 
 
 
 <script>
-    window.createPriceChart = (labels, data) => {
-        var ctx = document.getElementById('priceChart').getContext('2d');
-        var myChart = new Chart('priceChart', {
+    var myChart;
+    createPriceChart = (priceChartID,labels, data) => {
+        myChart = new Chart(document.getElementById(priceChartID), {
             type: 'line',
             data: {
                 labels: labels,
@@ -52,18 +52,19 @@
         });
     };
 
-    window.addData = (chartId, labels, newData) => {
+    addData = (labels, newData) => {
         console.log('addData function is executing.'); // Log für Ausführung der Funktion
         try {
-            var chart = document.getElementById('priceChart').getContext('2d');
-            console.log(chart);
-            chart.config.data.labels = labels;
-            chart.config.data.datasets[0].data = newData;
-            chart.update();
+            myChart.data.labels = labels;
+            myChart.data.datasets.forEach((dataset) => {
+                dataset.data = newData;
+            });
+            myChart.update();
         } catch (error) {
             console.error('An error occurred in addData function:', error); // Fehlermeldung in der Konsole anzeigen
         }
     }
+
 </script>
 
 @code {
@@ -71,24 +72,29 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("createPriceChart", Prices.Keys.ToArray(), Prices.Values.ToArray());
+            await JSRuntime.InvokeVoidAsync("createPriceChart", Symbol, pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
         }
     }
 
-
-    public async Task CreatePriceChart()
-    {
-        if (Prices != null && Prices.Count > 0)
-        {
-            await JSRuntime.InvokeVoidAsync("createPriceChart", Prices.Keys.ToArray(), Prices.Values.ToArray());
-        }
-    }
 
     public async Task UpdateChart(DateTime dateTime, decimal price)
     {
-        Prices.Add(dateTime, (decimal)price);
+        // Füge den neuen Datenpunkt hinzu oder überschreibe den letzten Wert
+        if (pricesList.Count > 0 && dateTime.Subtract(pricesList.Last().Key).TotalSeconds < 30)
+        {
+            pricesList[pricesList.Count - 1] = new KeyValuePair<DateTime, decimal>(pricesList[pricesList.Count - 1].Key, price);
+        }
+        else
+        {
+            pricesList.Add(new KeyValuePair<DateTime, decimal>(dateTime, price));
+        }
+
+        // Entferne Datenpunkte, die älter als 30 Minuten sind
+        DateTime oldestValidTime = dateTime.AddMinutes(-30);
+        pricesList.RemoveAll(kv => kv.Key < oldestValidTime);
+
         // Erstelle ein neues Diagramm mit den aktualisierten Preisen
-        await JSRuntime.InvokeVoidAsync("addData", "priceChart", Prices.Keys.ToArray(), Prices.Values.ToArray());
+        await JSRuntime.InvokeVoidAsync("addData", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
     }
 
 
@@ -96,5 +102,22 @@
     [Inject]
     public IJSRuntime JSRuntime { get; set; }
 
-    [Parameter] public Dictionary<DateTime, decimal> Prices { get; set; }
+    private string _symbol;
+
+    [Parameter]
+    public string Symbol
+    {
+        get => _symbol;
+        set
+        {
+            // Überprüfe, ob der Wert nicht leer ist
+            if (!string.IsNullOrEmpty(value))
+            {
+                // Setze den Wert und füge "priceChart[]" hinzu
+                _symbol = $"priceChart{value}";
+            }
+        }
+    }
+
+    [Parameter] public List<KeyValuePair<DateTime, decimal>> pricesList { get; set; }
 }
