@@ -6,10 +6,23 @@
 
 <h1>Prices</h1>
 
-@foreach (var priceEntry in priceEntries)
-{
-    <p>@priceEntry.Symbol: @priceEntry.Price</p>
-}
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var priceEntry in priceEntries)
+        {
+            <tr @onclick="(() => RedirectToCryptocurrency(priceEntry.Symbol))" style="cursor: pointer;" title="Klicken, um Details von @priceEntry.Symbol anzuzeigen">
+                <td>@priceEntry.Symbol</td>
+                <td>@priceEntry.Price</td>
+            </tr>
+        }
+    </tbody>
+</table>
 
 <PriceChart Prices="Priceslol" @ref="priceChart" />
 
@@ -61,5 +74,10 @@
     {
         public string Symbol { get; set; }
         public decimal? Price { get; set; }
+    }
+
+    private void RedirectToCryptocurrency(string symbol)
+    {
+        Navigation.NavigateTo($"cryptocurrencies/{symbol}");
     }
 }
