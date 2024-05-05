@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation;
 @using WebApp.Components.SubComponents;
+@implements IAsyncDisposable
 
 <PageTitle>IeCAG - Cryptocurrencies</PageTitle>
 
@@ -25,9 +26,9 @@
         }
     </tbody>
 </table>
-
+<!--
 <PriceChart Symbol="BTC" pricesList="Priceslol" @ref="priceChart" />
-
+-->
 @code {
     PriceChart priceChart;
 
@@ -60,7 +61,7 @@
                 existingEntry.Price = price; // Aktualisiere den Preis des vorhandenen Eintrags
                 if (symbol.Equals("BTC"))
                 {
-                    await priceChart.UpdateChart(DateTime.Now, (decimal)price);
+                    //await priceChart.UpdateChart(DateTime.Now, (decimal)price);
                 }
             }
             else
@@ -72,6 +73,18 @@
 
         await hubConnection.StartAsync();
     }
+
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
 
     public class PriceEntry
     {
