@@ -6,12 +6,13 @@
 @implements IAsyncDisposable
 
 
-<h1>Cryptocurrency Detail Page for @Symbol</h1>
+<h1>@Symbol at @Price €</h1>
 
 <PriceChart Symbol="@Symbol" pricesList="priceList" @ref="priceChart" />
 
 @code {
     [Parameter] public string Symbol { get; set; }
+    public decimal Price { get; set; }
     PriceChart priceChart;
     private HubConnection hubConnection;
 
@@ -38,6 +39,8 @@
                 if (symbol == Symbol)
                 {
                     await priceChart.UpdateChart(DateTime.Now, (decimal)price);
+                    Price = (decimal)price;
+                    InvokeAsync(StateHasChanged);
                 }
             });
 
