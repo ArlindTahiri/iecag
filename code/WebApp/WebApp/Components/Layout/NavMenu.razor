@@ -12,7 +12,19 @@
                     <a class="nav-link active" aria-current="page" href="">Cryptocurrencies</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">Wallet</a>
+                    <AuthorizeView>
+                        <NotAuthorized>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/login">Wallet</a>
+                            </li>
+                        </NotAuthorized>
+                        <Authorized>
+                            <li class="nav-item">
+                                <a class="nav-link" href="wallet">Wallet</a>
+                            </li>
+                        </Authorized>
+                    </AuthorizeView>
+                    
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">Pricing</a>
@@ -27,6 +39,19 @@
                         <li><a class="dropdown-item" href="#">Something else here</a></li>
                     </ul>
                 </li>
+
+                <AuthorizeView>
+                    <NotAuthorized>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Login</a>
+                        </li>
+                    </NotAuthorized>
+                    <Authorized>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">Logout</a>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
             </ul>
         </div>
     </div>
