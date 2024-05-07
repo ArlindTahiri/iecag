@@ -15,6 +15,10 @@ default:
     - az account set --subscription $SUBSCRIPTION_ID
     - set -euo pipefail
 
+# azure_setup job could "fail" due to resources already existing.
+# This could be checked for, but currently I am just happy to have fixed the azure-cli certificate problem.
+# The allow_failure documents some allowed exit codes.
+# And yes, the `|| exit 0` is terrible, but it makes the pipeline a pretty green.
 azure_create_resource_group:
   stage: azure_setup
   allow_failure:
