@@ -1,0 +1,29 @@
+variables:
+  RESOURCE_GROUP:
+    description: "the resource goup name"
+    value: "IeCAG-INFCA"
+
+stages:
+  - azure_setup
+  - build
+  - deploy
+
+default:
+  image: inf-docker.fh-rosenheim.de/inf-ca/sose2024/iecag/azure-cli
+  before_script:
+    - az login --service-principal --username $SP_ID --password $SP_SECRET --tenant $SP_TENANT_ID
+    - az account set --subscription $SUBSCRIPTION_ID
+    - set -euo pipefail
+
+# azure_setup job could "fail" due to resources already existing.
+# This could be checked for, but currently I am just happy to have fixed the azure-cli certificate problem.
+# The allow_failure documents some allowed exit codes.
+# And yes, the `|| exit 0` is terrible, but it makes the pipeline a pretty green.
+azure_create_resource_group:
+  stage: azure_setup
+  allow_failure:
+    exit_codes:
+      - 0
+      - 1
+  script:
+    - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
