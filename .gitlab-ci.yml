@@ -11,7 +11,7 @@ stages:
 default:
   image: mcr.microsoft.com/azure-cli
   before_script:
-    - az login --service-principal --username $SP_ID --password $SP_SECRET --tenant $TENANT_ID
+    - az login --service-principal --username $SP_ID --password $SP_SECRET --tenant $SP_TENANT_ID
     - az account set --subscription $SUBSCRIPTION_ID
     - set -euo pipefail
 
