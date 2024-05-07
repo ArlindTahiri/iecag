@@ -18,7 +18,7 @@ A small simulated cryptocurrency trading platform.
 - User creation & managment
 - Crypto Wallet simulation
 - Faux Trading
-- Monitoring
+- Price Monitoring
 - Notifications to user
 
 ## Roadmap
