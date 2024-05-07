@@ -1,5 +1,7 @@
 variables:
-  - RESOURCE_GROUP: "IeCAG-INFCA"
+  - RESOURCE_GROUP:
+    - description: "the resource goup name"
+    - value: "IeCAG-INFCA"
 
 stages:
   - azure_setup
