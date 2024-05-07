@@ -1,0 +1,20 @@
+variables:
+  - RESOURCE_GROUP: "IeCAG-INFCA"
+
+stages:
+  - azure_setup
+  - build
+  - deploy
+
+default:
+  image: mcr.microsoft.com/azure-cli
+  before_script:
+    - az login --service-principal --username $SP_ID --password $SP_SECRET --tenant $TENANT_ID
+    - az account set --subscription $SUBSCRIPTION_ID
+    - set -euo pipefail
+
+azure_create_resource_group:
+  stage: azure_setup
+  script:
+    - az group create -n $RESOURCE_GROUP -l westeurope
+  allow_failures: true
