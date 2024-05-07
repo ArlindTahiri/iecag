@@ -17,5 +17,6 @@ default:
 
 azure_create_resource_group:
   stage: azure_setup
+  allow_failure: true
   script:
     - az group create -n $RESOURCE_GROUP -l westeurope
