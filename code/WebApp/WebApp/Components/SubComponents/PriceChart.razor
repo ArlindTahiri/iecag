@@ -1,0 +1,125 @@
+﻿@rendermode InteractiveServer
+
+<!-- In deiner Blazor-Komponente -->
+<div>
+    <canvas id="@Symbol"></canvas>
+</div>
+
+
+
+<script>
+    var myChart;
+    createPriceChart = (priceChartID,labels, data) => {
+        myChart = new Chart(document.getElementById(priceChartID), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Price',
+                    data: data,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    },
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            displayFormats: {
+                                minute: 'HH:mm'
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    zoom: {
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                            },
+                            pinch: {
+                                enabled: true
+                            },
+                            mode: 'xy'
+                        }
+                    }
+                }
+            }
+        });
+    };
+
+    addData = (labels, newData) => {
+        console.log('addData function is executing.'); // Log für Ausführung der Funktion
+        try {
+            myChart.data.labels = labels;
+            myChart.data.datasets.forEach((dataset) => {
+                dataset.data = newData;
+            });
+            myChart.update();
+        } catch (error) {
+            console.error('An error occurred in addData function:', error); // Fehlermeldung in der Konsole anzeigen
+        }
+    }
+
+</script>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("createPriceChart", Symbol, pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
+        }
+    }
+
+
+    public async Task UpdateChart(DateTime dateTime, decimal price)
+    {
+        // Füge den neuen Datenpunkt hinzu oder überschreibe den letzten Wert
+        if (pricesList.Count > 0 && dateTime.Subtract(pricesList.Last().Key).TotalSeconds < 30)
+        {
+            pricesList[pricesList.Count - 1] = new KeyValuePair<DateTime, decimal>(pricesList[pricesList.Count - 1].Key, price);
+        }
+        else
+        {
+            pricesList.Add(new KeyValuePair<DateTime, decimal>(dateTime, price));
+        }
+
+        // Entferne Datenpunkte, die älter als 30 Minuten sind
+        DateTime oldestValidTime = dateTime.AddMinutes(-30);
+        pricesList.RemoveAll(kv => kv.Key < oldestValidTime);
+
+        // Erstelle ein neues Diagramm mit den aktualisierten Preisen
+        await JSRuntime.InvokeVoidAsync("addData", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
+    }
+
+
+
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; }
+
+    private string _symbol;
+
+    [Parameter]
+    public string Symbol
+    {
+        get => _symbol;
+        set
+        {
+            // Überprüfe, ob der Wert nicht leer ist
+            if (!string.IsNullOrEmpty(value))
+            {
+                // Setze den Wert und füge "priceChart[]" hinzu
+                _symbol = $"priceChart{value}";
+            }
+        }
+    }
+
+    [Parameter] public List<KeyValuePair<DateTime, decimal>> pricesList { get; set; }
+}
