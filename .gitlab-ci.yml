@@ -1,7 +1,7 @@
 variables:
-  - RESOURCE_GROUP:
-    - description: "the resource goup name"
-    - value: "IeCAG-INFCA"
+  RESOURCE_GROUP:
+    description: "the resource goup name"
+    value: "IeCAG-INFCA"
 
 stages:
   - azure_setup
@@ -19,4 +19,3 @@ azure_create_resource_group:
   stage: azure_setup
   script:
     - az group create -n $RESOURCE_GROUP -l westeurope
-  allow_failures: true
