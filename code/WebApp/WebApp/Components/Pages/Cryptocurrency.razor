@@ -1,0 +1,62 @@
+﻿@page "/cryptocurrencies/{Symbol}"
+@using Microsoft.AspNetCore.SignalR.Client;
+@inject NavigationManager Navigation;
+@using WebApp.Components.SubComponents;
+@rendermode InteractiveServer
+@implements IAsyncDisposable
+
+
+<h1>@Symbol at @Price €</h1>
+
+<PriceChart Symbol="@Symbol" pricesList="priceList" @ref="priceChart" />
+
+@code {
+    [Parameter] public string Symbol { get; set; }
+    public decimal Price { get; set; }
+    PriceChart priceChart;
+    private HubConnection hubConnection;
+
+    public List<KeyValuePair<DateTime, decimal>> priceList { get; set; } = new List<KeyValuePair<DateTime, decimal>>
+    {
+        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-30), 48000),
+        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-25), 48500),
+        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-20), 49000),
+        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-15), 49500),
+        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-10), 50000),
+        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-5), 50500),
+        new KeyValuePair<DateTime, decimal>(DateTime.Now, 51000),
+    };
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
+        .Build();
+
+        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (symbol, price) =>
+            {
+                if (symbol == Symbol)
+                {
+                    await priceChart.UpdateChart(DateTime.Now, (decimal)price);
+                    Price = (decimal)price;
+                    InvokeAsync(StateHasChanged);
+                }
+            });
+
+        await hubConnection.StartAsync();
+    }
+
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+
+}

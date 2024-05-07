@@ -1,0 +1,99 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.SignalR.Client;
+@inject NavigationManager Navigation;
+@using WebApp.Components.SubComponents;
+@implements IAsyncDisposable
+
+<PageTitle>IeCAG - Cryptocurrencies</PageTitle>
+
+<h1>Prices</h1>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Symbol</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var priceEntry in priceEntries)
+        {
+            <tr @onclick="(() => RedirectToCryptocurrency(priceEntry.Symbol))" style="cursor: pointer;" title="Klicken, um Details von @priceEntry.Symbol anzuzeigen">
+                <td>@priceEntry.Symbol</td>
+                <td>@priceEntry.Price</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<!--
+<PriceChart Symbol="BTC" pricesList="Priceslol" @ref="priceChart" />
+-->
+@code {
+    PriceChart priceChart;
+
+    public List<KeyValuePair<DateTime, decimal>> Priceslol { get; set; } = new List<KeyValuePair<DateTime, decimal>>
+{
+    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-30), 48000),
+    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-25), 48500),
+    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-20), 49000),
+    
+    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-15), 49500),
+    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-10), 50000),
+    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-5), 50500),
+    new KeyValuePair<DateTime, decimal>(DateTime.Now, 51000),
+};
+
+    private List<PriceEntry> priceEntries = new List<PriceEntry>();
+    private HubConnection? hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
+            .Build();
+
+        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (symbol, price) =>
+        {
+            var existingEntry = priceEntries.FirstOrDefault(entry => entry.Symbol == symbol);
+            if (existingEntry != null)
+            {
+                existingEntry.Price = price; // Aktualisiere den Preis des vorhandenen Eintrags
+                if (symbol.Equals("BTC"))
+                {
+                    //await priceChart.UpdateChart(DateTime.Now, (decimal)price);
+                }
+            }
+            else
+            {
+                priceEntries.Add(new PriceEntry { Symbol = symbol, Price = price }); // Füge einen neuen Eintrag hinzu, wenn das Symbol noch nicht vorhanden ist
+            }
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+
+    public class PriceEntry
+    {
+        public string Symbol { get; set; }
+        public decimal? Price { get; set; }
+    }
+
+    private void RedirectToCryptocurrency(string symbol)
+    {
+        Navigation.NavigateTo($"cryptocurrencies/{symbol}");
+    }
+}

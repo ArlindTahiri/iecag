@@ -1,0 +1,12 @@
+.navbar {
+}
+
+    .navbar::after {
+        content: ""; /* Pseudo-Element für die untere Linie */
+        position: absolute; /* Position relativ zum Elternelement (.navbar) */
+        bottom: 0; /* Am unteren Rand positionieren */
+        left: 0; /* Linke Position auf 0 setzen */
+        width: 100%; /* Die gesamte Breite der Navbar einnehmen */
+        height: 1px; /* Dicke der Linie */
+        background-color: #6e7681; /* Farbe der Linie */
+    }

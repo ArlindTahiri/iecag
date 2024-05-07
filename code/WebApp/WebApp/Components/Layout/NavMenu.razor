@@ -1,0 +1,58 @@
+﻿<nav class="navbar navbar-expand-lg navbardark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex justify-content-center align-items-center" href="">
+            <img src="/IeCAG_Logo_Lang.png" alt="Logo" height="30" class="d-inline-block align-text-top">
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="">Cryptocurrencies</a>
+                </li>
+                <li class="nav-item">
+                    <AuthorizeView>
+                        <NotAuthorized>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/login">Wallet</a>
+                            </li>
+                        </NotAuthorized>
+                        <Authorized>
+                            <li class="nav-item">
+                                <a class="nav-link" href="wallet">Wallet</a>
+                            </li>
+                        </Authorized>
+                    </AuthorizeView>
+                    
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Pricing</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Dropdown link
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                        <li><a class="dropdown-item" href="#">Action</a></li>
+                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                    </ul>
+                </li>
+
+                <AuthorizeView>
+                    <NotAuthorized>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Login</a>
+                        </li>
+                    </NotAuthorized>
+                    <Authorized>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">Logout</a>
+                        </li>
+                    </Authorized>
+                </AuthorizeView>
+            </ul>
+        </div>
+    </div>
+</nav>
