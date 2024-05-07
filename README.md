@@ -16,10 +16,17 @@ A small simulated cryptocurrency trading platform.
 
 ## Features
 - User creation & managment
+  - collection and managing of user information
+  - including name, associated wallets, transactions
 - Crypto Wallet simulation
+  - contents and value are simulated
 - Faux Trading
-- Price Monitoring
+  - backend runs a simulation based on real-world prices.
+  - users can buy and sell cryptocurrencies with fiat currency
+- Price History
+  - historical data of cryptocurrencies are cached
 - Notifications to user
+  - IFTTT (**I**f **T**his **T**hen **T**hat) interface for users to be notified about e.g. prices passing a threshold
 
 ## Roadmap
 - [x] 2024-04-09: Teams and topic defined: A project with the team members was created on GitLab
