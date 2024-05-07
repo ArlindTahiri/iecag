@@ -22,4 +22,4 @@ azure_create_resource_group:
       - 0
       - 1
   script:
-    - az group create -n $RESOURCE_GROUP -l westeurope
+    - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
