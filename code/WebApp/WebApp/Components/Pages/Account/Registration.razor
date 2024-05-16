@@ -1,0 +1,72 @@
+﻿@page "/register"
+
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using WebApp.Models.ViewModels
+@inject NavigationManager navigationManager
+
+<div class="row">
+    <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
+        <EditForm Model="@Model" OnValidSubmit="RegisterUser" FormName="RegisterForm">
+            <DataAnnotationsValidator />
+            <div class="mb-3 text-center flex-column">
+                <h3>REGISTER</h3>
+            </div>
+            <div class="mb-3">
+                <label>User Name</label>
+                <InputText @bind-Value="Model.UserName" class="form-control" placeholder="Username" />
+                <ValidationMessage For="() => Model.UserName" />
+            </div>
+            <div class="mb-3">
+                <label>Password</label>
+                <InputText @bind-Value="Model.Password" placeholder="Password" type="password" class="form-control" />
+                <ValidationMessage For="() => Model.Password" />
+            </div>
+            <div class="mb-3">
+                <label>Confirm Password</label>
+                <InputText @bind-Value="Model.ConfirmPassword" placeholder="Confirm Password" type="password" class="form-control" />
+                <ValidationMessage For="() => Model.ConfirmPassword" />
+            </div>
+            <div class="mb-3 text-center">
+                <span class="text-danger">@errorMessage</span>
+            </div>
+            <div class="mb-3 d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Register</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    public RegisterViewModel Model { get; set; } = new();
+
+    private string? errorMessage;
+
+    private async Task RegisterUser()
+    {
+        // Hier könntest du die Logik für die Registrierung implementieren,
+        // z.B. Überprüfung, ob der Benutzername bereits vorhanden ist, usw.
+        // Für dieses Beispiel fügen wir einfach einen neuen Benutzer hinzu.
+
+        // Check if password matches confirm password
+        if (Model.Password != Model.ConfirmPassword)
+        {
+            errorMessage = "Passwords do not match";
+            return;
+        }
+
+        // For simplicity, let's assume registration is successful
+        // Create a new user
+        var newUser = new LoginViewModel { UserName = Model.UserName, Password = Model.Password };
+
+        // You may need to add more validation logic here, e.g. check if username is already taken
+
+        // For demonstration, let's just assume registration is successful and navigate to login page
+        navigationManager.NavigateTo("/login");
+    }
+}

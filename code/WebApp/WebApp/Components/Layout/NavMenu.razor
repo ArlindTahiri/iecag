@@ -12,7 +12,7 @@
                     <a class="nav-link active" aria-current="page" href="">Cryptocurrencies</a>
                 </li>
                 <li class="nav-item">
-                    <AuthorizeView>
+                    <AuthorizeView Roles="Administrator, User">
                         <NotAuthorized>
                             <li class="nav-item">
                                 <a class="nav-link" href="/login">Wallet</a>
@@ -44,6 +44,9 @@
                     <NotAuthorized>
                         <li class="nav-item">
                             <a class="nav-link" href="/login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/register">Register</a>
                         </li>
                     </NotAuthorized>
                     <Authorized>
