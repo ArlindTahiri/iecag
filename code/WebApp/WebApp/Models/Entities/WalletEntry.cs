@@ -8,5 +8,6 @@ namespace WebApp.Models.Entities
         public string Symbol { get; set; }
         public decimal? Amount { get; set; }
         public decimal? Price { get; set; }
+        public decimal? CurrentPrice { get; set; }
     }
 }

@@ -9,7 +9,7 @@
 
 <h3>Wallet</h3>
 
-<PriceChart Symbol="Portfolio" pricesList="priceList" />
+<PriceChart Symbol="Portfolio" pricesList="priceList" @ref="priceChart"/>
 
 <table class="table">
     <thead>
@@ -25,21 +25,18 @@
     <tbody>
         @foreach (var walletEntry in walletEntries)
         {
-            var priceEntry = priceEntries.FirstOrDefault(f => f.Symbol.Equals(walletEntry.Symbol));
-            if (priceEntry != null)
-            {
-                var currentPrice = priceEntry.Price;
-                var averagePrice = walletEntry.Price;
-                var priceChange = ((currentPrice - averagePrice) / averagePrice) * 100;
-                <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Symbol))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Symbol anzuzeigen">
-                    <td>@walletEntry.Name @walletEntry.Symbol</td>
-                    <td>@currentPrice</td>
-                    <td>@averagePrice</td>
-                    <td>@priceChange %</td>
-                    <td>@walletEntry.Amount</td>
-                    <td>@(walletEntry.Amount * currentPrice)</td>
-                </tr>
-            }
+            var averagePrice = walletEntry.Price;
+            var priceChange = walletEntry.CurrentPrice.HasValue && averagePrice.HasValue
+            ? Math.Round(((walletEntry.CurrentPrice.Value - averagePrice.Value) / averagePrice.Value) * 100, 2)
+            : (decimal?)null;
+            <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Symbol))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Symbol anzuzeigen">
+                <td>@walletEntry.Name @walletEntry.Symbol</td>
+                <td>@walletEntry.CurrentPrice</td>
+                <td>@averagePrice</td>
+                <td>@priceChange %</td>
+                <td>@walletEntry.Amount</td>
+                <td>@(walletEntry.Amount * walletEntry.CurrentPrice)</td>
+            </tr>
         }
     </tbody>
 </table>
@@ -58,9 +55,14 @@
         new KeyValuePair<DateTime, decimal>(DateTime.Now, 51000),
     };
 
-    private List<WalletEntry> walletEntries = new List<WalletEntry>();
+    private List<WalletEntry> walletEntries = new List<WalletEntry>
+    {
+        new WalletEntry { Name = "Bitcoin", Symbol = "BTC", Amount = 0.5m, Price = 45000m, CurrentPrice = 48000m },
+        new WalletEntry { Name = "Ethereum", Symbol = "ETH", Amount = 2m, Price = 3000m, CurrentPrice = 3200m },
+        new WalletEntry { Name = "Crypto.com Coin", Symbol = "CRO", Amount = 1000m, Price = 0.2m, CurrentPrice = 0.25m }
+    };
 
-    private List<PriceEntry> priceEntries = new List<PriceEntry>();
+
     private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
@@ -71,14 +73,12 @@
 
         hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (symbol, price) =>
         {
-            var existingEntry = priceEntries.FirstOrDefault(entry => entry.Symbol == symbol);
+            var existingEntry = walletEntries.FirstOrDefault(entry => entry.Symbol == symbol);
             if (existingEntry != null)
             {
-                existingEntry.Price = price; // Aktualisiere den Preis des vorhandenen Eintrags
-            }
-            else
-            {
-                priceEntries.Add(new PriceEntry { Symbol = symbol, Price = price }); // Füge einen neuen Eintrag hinzu, wenn das Symbol noch nicht vorhanden ist
+                existingEntry.CurrentPrice = price; // Aktualisiere den Preis des vorhandenen Eintrags
+                decimal allValue = walletEntries.Sum(entry => entry.Amount.GetValueOrDefault() * entry.CurrentPrice.GetValueOrDefault());
+                await priceChart.UpdateChart(DateTime.Now, allValue);
             }
             InvokeAsync(StateHasChanged);
         });
