@@ -9,16 +9,16 @@ resource "azurerm_resource_group" "iecag-infca" {
 
 resource "azurerm_log_analytics_workspace" "iecag-log-analytics" {
   name                = "iecag-log-analytics"
-  location            = var.location
-  resource_group_name = var.rgname
+  location            = azurerm_resource_group.iecag-infca.location
+  resource_group_name = azurerm_resource_group.iecag-infca.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
 
 resource "azurerm_container_app_environment" "iecag-Environment" {
   name                       = "iecag-Environment"
-  location                   = var.location
-  resource_group_name        = var.rgname
+  location                   = azurerm_resource_group.iecag-infca.location
+  resource_group_name        = azurerm_resource_group.iecag-infca.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.iecag-log-analytics.id
 }
 
