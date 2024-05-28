@@ -22,14 +22,14 @@ default:
 # This could be checked for, but currently I am just happy to have fixed the azure-cli certificate problem.
 # The allow_failure documents some allowed exit codes.
 # And yes, the `|| exit 0` is terrible, but it makes the pipeline a pretty green.
-azure_create_resource_group:
-  stage: azure_setup
-  allow_failure:
-    exit_codes:
-      - 0
-      - 1
-  script:
-    - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
+#azure_create_resource_group:
+#  stage: azure_setup
+#  allow_failure:
+#    exit_codes:
+#      - 0
+#      - 1
+#  script:
+#    - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
 
 tilly_nuke:
   stage: deploy
@@ -58,5 +58,7 @@ terraform:
   artifacts:
     paths:
       - terraform/tfplan
+  needs:
+    - tilly_nuke
   rules:
     - if: '$DEPLOY == "true"'
