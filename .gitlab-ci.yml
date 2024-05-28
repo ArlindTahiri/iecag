@@ -2,6 +2,9 @@ variables:
   RESOURCE_GROUP:
     description: "the resource goup name"
     value: "IeCAG-INFCA"
+  DEPLOY:
+    description: "Deploying the infrastructure"
+    value: "true"
 
 stages:
   - azure_setup
@@ -27,3 +30,33 @@ azure_create_resource_group:
       - 1
   script:
     - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
+
+tilly_nuke:
+  stage: deploy
+  image: inf-docker.fh-rosenheim.de/inf-ca/sose2024/iecag/azure-cli
+  script:
+    - az group delete --yes --name $RESOURCE_GROUP || exit 0
+  rules:
+    - if: '$DEPLOY == "true"'
+
+terraform:
+  stage: deploy
+  image: 
+    name: hashicorp/terraform:latest
+    entrypoint:
+      - '/usr/bin/env'
+      - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+  script: 
+    - apk update && apk add ca-certificates
+    - mkdir -p /etc/ssl/certs
+    - cp $CI_PROJECT_DIR/terraform/certificate.crt $CUSTOM_CA_BUNDLE
+    - update-ca-certificates
+    - cd terraform 
+    - terraform init
+    - terraform plan -var="client_id=$SP_ID" -var="client_secret=$SP_SECRET" -var="tenant_id=$SP_TENANT_ID" -var="subscription_id=$SUBSCRIPTION_ID" -var="ci_registry=$CI_REGISTRY" -var="ci_registry_user=$CI_REGISTRY_USER" -var="ci_registry_pw=$CI_REGISTRY_PASSWORD" -out=tfplan
+    - terraform apply -auto-approve
+  artifacts:
+    paths:
+      - terraform/tfplan
+  rules:
+    - if: '$DEPLOY == "true"'
