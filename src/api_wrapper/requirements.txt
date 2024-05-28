@@ -1,0 +1,6 @@
+git+https://github.com/sveint/flask-swagger-ui.git@4.11.1
+flask
+flask_restx
+pyodbc
+azure-data-tables
+urllib3
