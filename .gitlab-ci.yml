@@ -46,11 +46,12 @@ terraform:
     entrypoint:
       - '/usr/bin/env'
       - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
-  script: 
+  before_script: 
     - apk update && apk add ca-certificates
     - mkdir -p /etc/ssl/certs
-    - cp $CI_PROJECT_DIR/terraform/certificate.crt $CUSTOM_CA_BUNDLE
+    - cp $CI_PROJECT_DIR/terraform/.thro.crt $CUSTOM_CA_BUNDLE
     - update-ca-certificates
+  script:
     - cd terraform 
     - terraform init
     - terraform plan -var="client_id=$SP_ID" -var="client_secret=$SP_SECRET" -var="tenant_id=$SP_TENANT_ID" -var="subscription_id=$SUBSCRIPTION_ID" -var="ci_registry=$CI_REGISTRY" -var="ci_registry_user=$CI_REGISTRY_USER" -var="ci_registry_pw=$CI_REGISTRY_PASSWORD" -out=tfplan
