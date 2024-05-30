@@ -4,6 +4,9 @@
 @inject NavigationManager Navigation;
 @using WebApp.Components.SubComponents;
 @implements IAsyncDisposable
+@using Microsoft.Extensions.Options;
+@inject IOptions<AzureTableStorageOptions> AzureTableStorageOptions;
+@using Azure.Data.Tables;
 
 
 <PageTitle>IeCAG - Cryptocurrencies</PageTitle>
@@ -36,6 +39,26 @@
 
     protected override async Task OnInitializedAsync()
     {
+        //Get all the prices from the Azure Table
+        var options = AzureTableStorageOptions.Value;
+
+        // Verbindung zu Azure Table Storage herstellen
+        var serviceClient = new TableServiceClient(new Uri(options.TableEndpoint), new TableSharedKeyCredential(options.AccountName, options.AccountKey));
+        var tableClient = serviceClient.GetTableClient("LatestCryptocurrencyPrices");
+
+        // Lade alle Einträge aus der Tabelle
+        await foreach (var entity in tableClient.QueryAsync<TableEntity>())
+        {
+            priceEntries.Add(new PriceEntry
+                {
+                    Symbol = entity.PartitionKey,
+                    Price = (decimal?)entity["Price"]
+                });
+        }
+
+
+
+        // Connect to the SignalR PriceHub
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
             .Build();
