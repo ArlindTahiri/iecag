@@ -1,11 +1,18 @@
 ﻿@page "/wallet"
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Administrator,user")]
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@inject HttpContext HttpContext;
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation;
 @using WebApp.Components.SubComponents;
 @implements IAsyncDisposable
+@using Microsoft.Extensions.Options;
+@inject IOptions<AzureTableStorageOptions> AzureTableStorageOptions;
+@using Azure.Data.Tables;
 
 <h3>Wallet</h3>
 
@@ -67,6 +74,43 @@
 
     protected override async Task OnInitializedAsync()
     {
+        //Get all the transactions from the Azure Table
+        var options = AzureTableStorageOptions.Value;
+
+        var serviceClient = new TableServiceClient(new Uri(options.TableEndpoint), new TableSharedKeyCredential(options.AccountName, options.AccountKey));
+        var tableClient = serviceClient.GetTableClient("Transactions");
+
+        var identity = (ClaimsIdentity)HttpContext.User.Identity;
+        var userNameClaim = identity.FindFirst(ClaimTypes.Name);
+        var userName = userNameClaim?.Value;
+        
+
+        // Abfrage zum Abrufen der Transaktionen des Benutzers
+        var userTransactionsQuery = tableClient.QueryAsync<TableEntity>(
+            filter: $"userid eq '{userName}'",
+            select: new[] { "cryptocurrency", "pricePaidAll", "amount" }
+        );
+
+        var queryResults = new List<TableEntity>();
+
+        await foreach (var entity in userTransactionsQuery)
+        {
+            queryResults.Add(entity);
+        }
+
+        // Durch die Benutzertransaktionen iterieren und nach Kryptowährungen gruppieren
+        walletEntries = queryResults
+        .GroupBy(
+            t => t["cryptocurrency"].ToString(),
+            (key, transactions) => new WalletEntry
+                {
+                    Symbol = key,
+                    Amount = transactions.Sum(t => (decimal)t["amount"]),
+                    Price = transactions.Sum(t => (decimal)t["pricePaidAll"]) / transactions.Sum(t => (decimal)t["amount"])
+                })
+        .ToList();
+
+
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
             .Build();
