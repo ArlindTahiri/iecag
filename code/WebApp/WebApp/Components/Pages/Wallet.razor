@@ -4,7 +4,6 @@
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
-@inject HttpContext HttpContext;
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation;
@@ -74,6 +73,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        /*
         //Get all the transactions from the Azure Table
         var options = AzureTableStorageOptions.Value;
 
@@ -83,7 +83,7 @@
         var identity = (ClaimsIdentity)HttpContext.User.Identity;
         var userNameClaim = identity.FindFirst(ClaimTypes.Name);
         var userName = userNameClaim?.Value;
-        
+
 
         // Abfrage zum Abrufen der Transaktionen des Benutzers
         var userTransactionsQuery = tableClient.QueryAsync<TableEntity>(
@@ -109,6 +109,7 @@
                     Price = transactions.Sum(t => (decimal)t["pricePaidAll"]) / transactions.Sum(t => (decimal)t["amount"])
                 })
         .ToList();
+        */
 
 
         hubConnection = new HubConnectionBuilder()

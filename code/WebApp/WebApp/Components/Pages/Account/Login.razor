@@ -7,14 +7,14 @@
 @inject NavigationManager navigationManager
 
 <div class="row">
-    <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border">
+    <div class="col-lg-4 offset-lg-4 pt-4 pb-4 border" style="border-radius:25px">
         <EditForm Model="@Model" OnValidSubmit="Authenticate" FormName="LoginForm">
             <DataAnnotationsValidator />
             <div class="mb-3 text-center flex-column">
-                <h3>LOGIN</h3>
+                <h3><b>LOGIN</b></h3>
             </div>
             <div class="mb-3">
-                <label>User Name</label>
+                <label>Username</label>
                 <InputText @bind-Value="Model.UserName" class="form-control" placeholder="Username" />
                 <ValidationMessage For="() => Model.UserName" />
             </div>
@@ -27,7 +27,7 @@
                 <span class="text-danger">@errorMessage</span>
             </div>
             <div class="mb-3 d-grid gap-2">
-                <button type="submit" class="btn btn-primary">Login</button>
+                <button type="submit" class="btn btn-primary" style="border-radius:20px">Login</button>
             </div>
             <div class="text-center">
                 <p>Don't have an account? <a href="/register">Create Account</a></p>
@@ -47,7 +47,7 @@
 
     private async Task Authenticate()
     {
-        var userAccount = new LoginViewModel{UserName="username", Password="password"}; //get database userAccount
+        var userAccount = new LoginViewModel{UserName="username", Password="arlind"}; //get database userAccount
         if(userAccount is null || userAccount.Password != Model.Password)
         {
             errorMessage = "Invalid User Name or Password";
