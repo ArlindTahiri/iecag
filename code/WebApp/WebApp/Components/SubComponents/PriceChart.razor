@@ -2,7 +2,7 @@
 
 <!-- In deiner Blazor-Komponente -->
 <div>
-    <canvas id="@Symbol"></canvas>
+    <canvas id="@Name"></canvas>
 </div>
 
 
@@ -74,7 +74,7 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("createPriceChart", Symbol, pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
+            await JSRuntime.InvokeVoidAsync("createPriceChart", Name, pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
         }
     }
 
@@ -104,19 +104,19 @@
     [Inject]
     public IJSRuntime JSRuntime { get; set; }
 
-    private string _symbol;
+    private string _name;
 
     [Parameter]
-    public string Symbol
+    public string Name
     {
-        get => _symbol;
+        get => _name;
         set
         {
             // Überprüfe, ob der Wert nicht leer ist
             if (!string.IsNullOrEmpty(value))
             {
                 // Setze den Wert und füge "priceChart[]" hinzu
-                _symbol = $"priceChart{value}";
+                _name = $"priceChart{value}";
             }
         }
     }

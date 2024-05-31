@@ -15,12 +15,12 @@
 
 <h3>Wallet</h3>
 
-<PriceChart Symbol="Portfolio" pricesList="priceList" @ref="priceChart"/>
+<PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart"/>
 
 <table class="table">
     <thead>
         <tr>
-            <th>Cryptocurrency Name</th>
+            <th>Cryptocurrency</th>
             <th>Derzeitiger Price</th>
             <th>Durchschnittkaufpreis</th>
             <th>% value Change</th>
@@ -31,12 +31,12 @@
     <tbody>
         @foreach (var walletEntry in walletEntries)
         {
-            var averagePrice = walletEntry.Price;
+            var averagePrice = walletEntry.AveragePrice;
             var priceChange = walletEntry.CurrentPrice.HasValue && averagePrice.HasValue
             ? Math.Round(((walletEntry.CurrentPrice.Value - averagePrice.Value) / averagePrice.Value) * 100, 2)
             : (decimal?)null;
-            <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Symbol))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Symbol anzuzeigen">
-                <td>@walletEntry.Name @walletEntry.Symbol</td>
+            <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Name anzuzeigen">
+                <td>@walletEntry.Name</td>
                 <td>@walletEntry.CurrentPrice</td>
                 <td>@averagePrice</td>
                 <td>@priceChange %</td>
@@ -63,9 +63,9 @@
 
     private List<WalletEntry> walletEntries = new List<WalletEntry>
     {
-        new WalletEntry { Name = "Bitcoin", Symbol = "BTC", Amount = 0.5m, Price = 45000m, CurrentPrice = 48000m },
-        new WalletEntry { Name = "Ethereum", Symbol = "ETH", Amount = 2m, Price = 3000m, CurrentPrice = 3200m },
-        new WalletEntry { Name = "Crypto.com Coin", Symbol = "CRO", Amount = 1000m, Price = 0.2m, CurrentPrice = 0.25m }
+        new WalletEntry { Name = "Bitcoin", Amount = 0.5m, AveragePrice = 45000m, CurrentPrice = 48000m },
+        new WalletEntry { Name = "Ethereum", Amount = 2m, AveragePrice = 3000m, CurrentPrice = 3200m },
+        new WalletEntry { Name = "Cronos", Amount = 1000m, AveragePrice = 0.2m, CurrentPrice = 0.25m }
     };
 
 
@@ -85,40 +85,85 @@
         var userName = userNameClaim?.Value;
 
 
+        // Definieren der Spaltennamen
+        var userIdColumn = "userId";
+        var cryptocurrencyNameColumn = "cryptocurrencyName";
+        var amountColumn = "amount";
+        var pricePaidAllColumn = "pricePaidAll";
+        var transactionDateColumn = "transactionDate";
+        var transactionTypeColumn = "transactionType";
+
         // Abfrage zum Abrufen der Transaktionen des Benutzers
         var userTransactionsQuery = tableClient.QueryAsync<TableEntity>(
-            filter: $"userid eq '{userName}'",
-            select: new[] { "cryptocurrency", "pricePaidAll", "amount" }
+            filter: $"{userIdColumn} eq '{userName}'",
+            select: new[] { cryptocurrencyNameColumn, amountColumn, pricePaidAllColumn, transactionDateColumn, transactionTypeColumn }
         );
 
-        var queryResults = new List<TableEntity>();
+        List<TransactionEntry> queryResults = new List<TransactionEntry>();
 
         await foreach (var entity in userTransactionsQuery)
         {
-            queryResults.Add(entity);
+            var transaction = new TransactionEntry
+                {
+                    UserId = entity.GetString(userIdColumn),
+                    CryptocurrencyName = entity.GetString(cryptocurrencyNameColumn),
+                    Amount = Convert.ToDecimal(entity[amountColumn]),
+                    PricePaidAll = Convert.ToDecimal(entity[pricePaidAllColumn]),
+                    TransactionDate = entity.GetDateTime(transactionDateColumn).GetValueOrDefault(),
+                    TransactionType = entity.GetString(transactionTypeColumn)
+                };
+
+            queryResults.Add(transaction);
         }
 
-        // Durch die Benutzertransaktionen iterieren und nach Kryptowährungen gruppieren
-        walletEntries = queryResults
-        .GroupBy(
-            t => t["cryptocurrency"].ToString(),
-            (key, transactions) => new WalletEntry
+        // Erstelle Empty WalletEntries nur mit dem Namen
+        walletEntries = queryResults.Select(transaction => new WalletEntry { Name = transaction.CryptocurrencyName }).Distinct().ToList();
+
+        // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
+        foreach (var walletEntry in walletEntries)
+        {
+            var AlltransactionsOfCurrency = queryResults.Where(transaction => transaction.CryptocurrencyName == walletEntry.Name).ToList();
+            walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
+            
+            // Berechne den durchschnittlichen Kaufpreis
+            if(walletEntry.Amount > 0)
+            {
+                var AllTransactionsSinceLastAmountZero = new List<TransactionEntry>();
+                decimal amount = 0;
+                var AlltransactionsSorted = AlltransactionsOfCurrency.OrderBy(t => t.TransactionDate).ToList();
+                foreach(var transaction in AlltransactionsSorted)
                 {
-                    Symbol = key,
-                    Amount = transactions.Sum(t => (decimal)t["amount"]),
-                    Price = transactions.Sum(t => (decimal)t["pricePaidAll"]) / transactions.Sum(t => (decimal)t["amount"])
-                })
-        .ToList();
+                    if (transaction.TransactionType == "Buy")
+                    {
+                        AllTransactionsSinceLastAmountZero.Add(transaction);
+                        amount += transaction.Amount;
+                    }
+                    else // TransactionType == "Sell"
+                    {
+                        AllTransactionsSinceLastAmountZero.Add(transaction);
+                        amount -= transaction.Amount;
+                    }
+                    if (amount == 0)
+                    {
+                        break;
+                    }
+                }
+                
+                walletEntry.AveragePrice = AllTransactionsSinceLastAmountZero.Average(transaction => transaction.TransactionType == "Buy" ? transaction.PricePaidAll : 0);
+            }
+            
+        }
         */
 
+        
 
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
             .Build();
 
-        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (symbol, price) =>
+        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (name, price) =>
         {
-            var existingEntry = walletEntries.FirstOrDefault(entry => entry.Symbol == symbol);
+            var existingEntry = walletEntries.FirstOrDefault(entry => entry.Name == name);
             if (existingEntry != null)
             {
                 existingEntry.CurrentPrice = price; // Aktualisiere den Preis des vorhandenen Eintrags
@@ -143,9 +188,9 @@
     }
 
 
-    private void RedirectToCryptocurrency(string symbol)
+    private void RedirectToCryptocurrency(string name)
     {
-        Navigation.NavigateTo($"cryptocurrencies/{symbol}");
+        Navigation.NavigateTo($"cryptocurrencies/{name}");
     }
 
 }
