@@ -15,7 +15,7 @@
 
 <h3>Wallet</h3>
 
-<PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart"/>
+<PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" />
 
 <table class="table">
     <thead>
@@ -78,7 +78,8 @@
         var options = AzureTableStorageOptions.Value;
 
         var serviceClient = new TableServiceClient(new Uri(options.TableEndpoint), new TableSharedKeyCredential(options.AccountName, options.AccountKey));
-        var tableClient = serviceClient.GetTableClient("Transactions");
+        var tableClientTransactions = serviceClient.GetTableClient("Transactions");
+        var tableClientPrices = serviceClient.GetTableClient("HistoricalPrices180Days");
 
         var identity = (ClaimsIdentity)HttpContext.User.Identity;
         var userNameClaim = identity.FindFirst(ClaimTypes.Name);
@@ -94,7 +95,7 @@
         var transactionTypeColumn = "transactionType";
 
         // Abfrage zum Abrufen der Transaktionen des Benutzers
-        var userTransactionsQuery = tableClient.QueryAsync<TableEntity>(
+        var userTransactionsQuery = tableClientTransactions.QueryAsync<TableEntity>(
             filter: $"{userIdColumn} eq '{userName}'",
             select: new[] { cryptocurrencyNameColumn, amountColumn, pricePaidAllColumn, transactionDateColumn, transactionTypeColumn }
         );
@@ -124,14 +125,14 @@
         {
             var AlltransactionsOfCurrency = queryResults.Where(transaction => transaction.CryptocurrencyName == walletEntry.Name).ToList();
             walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
-            
+
             // Berechne den durchschnittlichen Kaufpreis
-            if(walletEntry.Amount > 0)
+            if (walletEntry.Amount > 0)
             {
                 var AllTransactionsSinceLastAmountZero = new List<TransactionEntry>();
                 decimal amount = 0;
                 var AlltransactionsSorted = AlltransactionsOfCurrency.OrderBy(t => t.TransactionDate).ToList();
-                foreach(var transaction in AlltransactionsSorted)
+                foreach (var transaction in AlltransactionsSorted)
                 {
                     if (transaction.TransactionType == "Buy")
                     {
@@ -148,14 +149,59 @@
                         break;
                     }
                 }
-                
+
                 walletEntry.AveragePrice = AllTransactionsSinceLastAmountZero.Average(transaction => transaction.TransactionType == "Buy" ? transaction.PricePaidAll : 0);
             }
-            
+
+        }
+
+        var cryptocurrencyNameColumn2 = "cryptocurrencyName";
+        var price = "price";
+        var dateTimeStamp = "dateTimeStamp";
+
+
+        // Erstelle PortfolioValueList für 180 Tage
+        foreach (var walletEntry in walletEntries)
+        {
+            // Abfrage zum Abrufen der Transaktionen des Benutzers
+            var historicalPricesQuery = tableClientPrices.QueryAsync<TableEntity>(
+                filter: $"{cryptocurrencyNameColumn2} eq '{walletEntry.Name}'",
+                select: new[] { cryptocurrencyNameColumn2, price, dateTimeStamp }
+            );
+            List<KeyValuePair<DateTime, decimal>> query2Results = new List<KeyValuePair<DateTime, decimal>>();
+
+            await foreach (var entity in historicalPricesQuery)
+            {
+                var transaction = new KeyValuePair<DateTime, decimal>(entity.GetDateTime(dateTimeStamp).GetValueOrDefault(), Convert.ToDecimal(entity[price]));
+
+                query2Results.Add(transaction);
+            }
+
+            var AlltransactionsOfCurrencyOfLast180Days = queryResults.Where(transaction => transaction.CryptocurrencyName == walletEntry.Name && transaction.TransactionDate <= DateTime.Today.AddDays(-180)).ToList();
+
+            for (int i = 0; i < query2Results.Count; i++)
+            {
+                query2Results[i] = new KeyValuePair<DateTime, decimal>(query2Results[i].Key, query2Results[i].Value * AlltransactionsOfCurrencyOfLast180Days.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount));
+            }
+
+            // now add values to priceList
+            if (priceList.Count == 0)
+            {
+                priceList = query2Results;
+            }
+            else
+            {
+                for (int j = 0; j < priceList.Count; j++)
+                {
+                    priceList[j] = new KeyValuePair<DateTime, decimal>(priceList[j].Key, priceList[j].Value + query2Results[j].Value);
+                }
+            }
+
         }
         */
 
-        
+
+
 
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
