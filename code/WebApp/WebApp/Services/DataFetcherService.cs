@@ -49,7 +49,19 @@ namespace WebApp.Services
                 else
                 {
                     Random random = new Random();
-                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, random.Next(50000, 51000));
+                    if (name.Equals("Cronos"))
+                    {
+                        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, (decimal)random.Next(90, 130)/1000);
+                    }
+                    if (name.Equals("Bitcoin"))
+                    {
+                        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, random.Next(60000, 63000));
+                    }
+                    if (name.Equals("Ethereum"))
+                    {
+                        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, random.Next(3400, 3600));
+                    }
+                    
                     Console.WriteLine($"Failed to fetch data from {url}. Status code: {response.StatusCode}");
                 }
             }
