@@ -63,3 +63,4 @@ terraform:
     - tilly_nuke
   rules:
     - if: '$DEPLOY == "true"'
+  when: manual
