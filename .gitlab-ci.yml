@@ -2,6 +2,18 @@ variables:
   RESOURCE_GROUP:
     description: "the resource goup name"
     value: "IeCAG-INFCA"
+  STORAGE_ACCOUNT:
+    description: "the storage account name"
+    value: "IeCAG-storage"
+  COSMOSDB_DATA_ACCOUNT:
+    description: "the cosmos db account"
+    value: "IeCAG-cosmos"
+  TABLE_CURRENT_PRICE:
+    description: "current price table name"
+    value: "current_prices"
+  TABLE_PRICE_HISTORY:
+    description: "price history table name"
+    value: "price history"
 
 stages:
   - azure_setup
@@ -27,3 +39,14 @@ azure_create_resource_group:
       - 1
   script:
     - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
+
+azure_create_datatable:
+  stage: azure_setup
+  allow_failure: true
+  needs:
+    - azure_create_resource_group
+  script:
+    - az storage account create -n $STORAGE_ACCOUNT -g $RESOURCE_GROUP -l westus --subscription $SUBSCRIPTION_ID
+    - az cosmosdb create --name $COSMOSDB_DATA_ACCOUNT --capabilities EnableTable --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION_ID
+    - az cosmosdb table create --name $TABLE_CURRENT_PRICE --resource-group $RESOURCE_GROUP --account-name $COSMOSDB_DATA_ACCOUNT
+    - az cosmosdb table create --name $TABLE_PRICE_HISTORY --resource-group $RESOURCE_GROUP --account-name $COSMOSDB_DATA_ACCOUNT
