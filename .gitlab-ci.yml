@@ -4,10 +4,10 @@ variables:
     value: "IeCAG-INFCA"
   STORAGE_ACCOUNT:
     description: "the storage account name"
-    value: "IeCAG-storage"
+    value: "IeCAGstorage"
   COSMOSDB_DATA_ACCOUNT:
     description: "the cosmos db account"
-    value: "IeCAG-cosmos"
+    value: "IeCAGcosmos"
   TABLE_CURRENT_PRICE:
     description: "current price table name"
     value: "current_prices"
