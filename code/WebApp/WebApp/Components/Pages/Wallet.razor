@@ -73,7 +73,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        /*
+        
         //Get all the transactions from the Azure Table
         var options = AzureTableStorageOptions.Value;
 
@@ -100,7 +100,7 @@
             select: new[] { cryptocurrencyNameColumn, amountColumn, pricePaidAllColumn, transactionDateColumn, transactionTypeColumn }
         );
 
-        List<TransactionEntry> queryResults = new List<TransactionEntry>();
+        List<TransactionEntry> allTransactionsOfUser = new List<TransactionEntry>();
 
         await foreach (var entity in userTransactionsQuery)
         {
@@ -114,16 +114,16 @@
                     TransactionType = entity.GetString(transactionTypeColumn)
                 };
 
-            queryResults.Add(transaction);
+            allTransactionsOfUser.Add(transaction);
         }
 
         // Erstelle Empty WalletEntries nur mit dem Namen
-        walletEntries = queryResults.Select(transaction => new WalletEntry { Name = transaction.CryptocurrencyName }).Distinct().ToList();
+        walletEntries = allTransactionsOfUser.Select(transaction => new WalletEntry { Name = transaction.CryptocurrencyName }).Distinct().ToList();
 
         // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
         foreach (var walletEntry in walletEntries)
         {
-            var AlltransactionsOfCurrency = queryResults.Where(transaction => transaction.CryptocurrencyName == walletEntry.Name).ToList();
+            var AlltransactionsOfCurrency = allTransactionsOfUser.Where(transaction => transaction.CryptocurrencyName == walletEntry.Name).ToList();
             walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
 
             // Berechne den durchschnittlichen Kaufpreis
@@ -168,37 +168,43 @@
                 filter: $"{cryptocurrencyNameColumn2} eq '{walletEntry.Name}'",
                 select: new[] { cryptocurrencyNameColumn2, price, dateTimeStamp }
             );
-            List<KeyValuePair<DateTime, decimal>> query2Results = new List<KeyValuePair<DateTime, decimal>>();
+
+            List<KeyValuePair<DateTime, decimal>> historicalPricesOfCryptoCurrency = new List<KeyValuePair<DateTime, decimal>>();
 
             await foreach (var entity in historicalPricesQuery)
             {
                 var transaction = new KeyValuePair<DateTime, decimal>(entity.GetDateTime(dateTimeStamp).GetValueOrDefault(), Convert.ToDecimal(entity[price]));
 
-                query2Results.Add(transaction);
+                historicalPricesOfCryptoCurrency.Add(transaction);
             }
 
-            var AlltransactionsOfCurrencyOfLast180Days = queryResults.Where(transaction => transaction.CryptocurrencyName == walletEntry.Name && transaction.TransactionDate <= DateTime.Today.AddDays(-180)).ToList();
+            var AlltransactionsOfCurrencyOfLast180Days = allTransactionsOfUser.Where(transaction => transaction.CryptocurrencyName == walletEntry.Name && transaction.TransactionDate <= DateTime.Today.AddDays(-180)).ToList();
 
-            for (int i = 0; i < query2Results.Count; i++)
+            for (int i = 0; i < historicalPricesOfCryptoCurrency.Count; i++)
             {
-                query2Results[i] = new KeyValuePair<DateTime, decimal>(query2Results[i].Key, query2Results[i].Value * AlltransactionsOfCurrencyOfLast180Days.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount));
+                var date = historicalPricesOfCryptoCurrency[i].Key;
+                var relevantAmount = AlltransactionsOfCurrencyOfLast180Days
+                    .Where(transaction => transaction.TransactionDate <= date)
+                    .Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
+
+                historicalPricesOfCryptoCurrency[i] = new KeyValuePair<DateTime, decimal>(date, historicalPricesOfCryptoCurrency[i].Value * relevantAmount);
             }
 
             // now add values to priceList
             if (priceList.Count == 0)
             {
-                priceList = query2Results;
+                priceList = historicalPricesOfCryptoCurrency;
             }
             else
             {
                 for (int j = 0; j < priceList.Count; j++)
                 {
-                    priceList[j] = new KeyValuePair<DateTime, decimal>(priceList[j].Key, priceList[j].Value + query2Results[j].Value);
+                    priceList[j] = new KeyValuePair<DateTime, decimal>(priceList[j].Key, priceList[j].Value + historicalPricesOfCryptoCurrency[j].Value);
                 }
             }
 
         }
-        */
+        
 
 
 
