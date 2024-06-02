@@ -358,30 +358,4 @@
 
     }
 
-    [JSInvokable]
-    public async Task CalculatePricePaidAll()
-    {
-        if (averagePrice.HasValue)
-        {
-            pricePaidAll = averagePrice * amount;
-        }
-        else
-        {
-            pricePaidAll = null;
-        }
-    }
-
-    [JSInvokable]
-    public async Task CalculateAveragePrice()
-    {
-        if (pricePaidAll.HasValue)
-        {
-            averagePrice = pricePaidAll / amount;
-        }
-        else
-        {
-            averagePrice = null;
-        }
-    }
-
 }
