@@ -42,7 +42,7 @@
                 </ul>
                 <div class="form-group mt-4">
                     <label for="selectCryptocurrency">Select Cryptocurrency</label>
-                    <select class="form-select mt-2" @bind="selectedCryptocurrency">
+                    <select class="form-select mt-1" @bind="selectedCryptocurrency">
                         <option value="" disabled selected>Select a cryptocurrency</option>
                         @foreach (var crypto in cryptocurrencies)
                         {
@@ -52,17 +52,21 @@
                 </div>
                 <div class="form-group mt-3">
                     <label for="amount">Amount</label>
-                    <input type="number" class="form-control" id="amount" @bind="amount" oninput="calculatePricePaidAllOrAveragePrice()">
+                    <input type="number" class="form-control mt-1" id="amount" @bind="amount" oninput="calculatePricePaidAllOrAveragePrice()">
                 </div>
                 <div class="form-group mt-3 row">
                     <div class="col">
                         <label for="averagePrice">Average Price</label>
-                        <input type="number" class="form-control" id="averagePrice" @bind="averagePrice" oninput="calculatePricePaidAll()">
+                        <input type="number" class="form-control mt-1" id="averagePrice" @bind="averagePrice" oninput="calculatePricePaidAll()">
                     </div>
                     <div class="col">
                         <label for="pricePaidAll">Price Paid All</label>
-                        <input type="number" class="form-control" id="pricePaidAll" @bind="pricePaidAll" oninput="calculateAveragePrice()">
+                        <input type="number" class="form-control mt-1" id="pricePaidAll" @bind="pricePaidAll" oninput="calculateAveragePrice()">
                     </div>
+                </div>
+                <div class="form-group mt-3">
+                    <label for="transactionDate">Transaction Date</label>
+                    <input type="datetime-local" class="form-control mt-1" id="transactionDate" @bind="transactionDate">
                 </div>
             </div>
             <div class="modal-footer">
@@ -158,6 +162,7 @@
     private decimal? averagePrice;
     private decimal? pricePaidAll;
     private string transactionType = "Buy";
+    private DateTime transactionDate = DateTime.Now;
 
     private void selectTransactionType(string type)
     {
