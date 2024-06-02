@@ -17,11 +17,14 @@
 
 <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" />
 
-
+<hr />
+<br />
 <!-- Button trigger modal -->
-<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transactionModal">
-    Add Transaction
-</button>
+<div class="d-flex justify-content-end">
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transactionModal">
+        Add Transaction
+    </button>
+</div>
 
 <!-- Modal -->
 <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
@@ -180,7 +183,7 @@
         new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-15), 36000),
         new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-10), 36600),
         new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-5), 37200),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now, 3700),
+        new KeyValuePair<DateTime, decimal>(DateTime.Now, 37000),
     };
 
     private List<WalletEntry> walletEntries = new List<WalletEntry>
