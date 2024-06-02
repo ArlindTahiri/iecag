@@ -49,8 +49,16 @@ A small simulated cryptocurrency trading platform.
 ## Roadmap
 - [x] 2024-04-09: Teams and topic defined: A project with the team members was created on GitLab
 - [x] 2024-05-07: Project description, use cases, features are defined and described and checked in on GitLab
-- [ ] 2024-06-04: Interim project status - presentation and hardware procurement is completed
+- [ ] 2024-06-04: Interim project status
 - [ ] 2024-07-09: Final presentation
+
+## Division of Duties
+| Ruf, Lukas              | Tahiri, Arlind             | Gigl, Soph            |
+| ------                  | ------                     | ------                |
+|    CI Pipeline          |    Backend development     |  Logging              |
+|    API Wrapper          |    Frontendent development |  Heartbeat            |
+|    Infrastructure Setup |                            |  Notifications/Alerts |
+
 
 ## Authors and acknowledgment
 - [Arlind Tahiri](https://inf-git.fh-rosenheim.de/studtahiar5766)
