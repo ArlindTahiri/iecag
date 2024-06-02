@@ -33,6 +33,7 @@ default:
 tilly_nuke:
   stage: deploy
   image: inf-docker.fh-rosenheim.de/inf-ca/sose2024/iecag/azure-cli
+  allow_failure: true
   script:
     - az group delete --yes --name $RESOURCE_GROUP || exit 0
   rules:
