@@ -5,6 +5,18 @@ variables:
   DEPLOY:
     description: "Deploying the infrastructure"
     value: "true"
+  STORAGE_ACCOUNT:
+    description: "the storage account name"
+    value: "iecagstorage"
+  COSMOSDB_DATA_ACCOUNT:
+    description: "the cosmos db account"
+    value: "iecagcosmos"
+  TABLE_CURRENT_PRICE:
+    description: "current price table name"
+    value: "current_prices"
+  TABLE_PRICE_HISTORY:
+    description: "price history table name"
+    value: "price_history"
 
 stages:
   - azure_setup
@@ -17,19 +29,6 @@ default:
     - az login --service-principal --username $SP_ID --password $SP_SECRET --tenant $SP_TENANT_ID
     - az account set --subscription $SUBSCRIPTION_ID
     - set -euo pipefail
-
-# azure_setup job could "fail" due to resources already existing.
-# This could be checked for, but currently I am just happy to have fixed the azure-cli certificate problem.
-# The allow_failure documents some allowed exit codes.
-# And yes, the `|| exit 0` is terrible, but it makes the pipeline a pretty green.
-#azure_create_resource_group:
-#  stage: azure_setup
-#  allow_failure:
-#    exit_codes:
-#      - 0
-#      - 1
-#  script:
-#    - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
 
 tilly_nuke:
   stage: deploy
@@ -64,3 +63,31 @@ terraform:
   rules:
     - if: '$DEPLOY == "true"'
   when: manual
+
+# azure_setup job could "fail" due to resources already existing.
+# This could be checked for, but currently I am just happy to have fixed the azure-cli certificate problem.
+# The allow_failure documents some allowed exit codes.
+# And yes, the `|| exit 0` is terrible, but it makes the pipeline a pretty green.
+azure_create_resource_group:
+  stage: azure_setup
+  allow_failure:
+    exit_codes:
+      - 0
+      - 1
+  script:
+    - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
+  rules:
+    - if: '$DEPLOY == "true"'
+
+azure_create_datatable:
+  stage: azure_setup
+  allow_failure: true
+  needs:
+    - azure_create_resource_group
+  script:
+    - az storage account create -n $STORAGE_ACCOUNT -g $RESOURCE_GROUP -l westus --subscription $SUBSCRIPTION_ID || exit 0
+    - az cosmosdb create --name $COSMOSDB_DATA_ACCOUNT --capabilities EnableTable --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION_ID || exit 0
+    - az cosmosdb table create --name $TABLE_CURRENT_PRICE --resource-group $RESOURCE_GROUP --account-name $COSMOSDB_DATA_ACCOUNT || exit 0
+    - az cosmosdb table create --name $TABLE_PRICE_HISTORY --resource-group $RESOURCE_GROUP --account-name $COSMOSDB_DATA_ACCOUNT || exit 0
+  rules:
+    - if: '$DEPLOY == "true"'
