@@ -32,14 +32,15 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="transactionType">Transaction Type</label>
-                    <select class="form-select mt-2" @bind="transactionType">
-                        <option value="Buy">Buy</option>
-                        <option value="Sell">Sell</option>
-                    </select>
-                </div>
-                <div class="form-group">
+                <ul class="nav nav-pills nav-fill">
+                    <li class="nav-item">
+                        <button class="nav-link @(transactionType == "Buy" ? "active" : "")" aria-current="page" @onclick="(() => selectTransactionType(buyString))">Buy</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick="(() => selectTransactionType(sellString))">Sell</button>
+                    </li>
+                </ul>
+                <div class="form-group mt-4">
                     <label for="selectCryptocurrency">Select Cryptocurrency</label>
                     <select class="form-select mt-2" @bind="selectedCryptocurrency">
                         <option value="" disabled selected>Select a cryptocurrency</option>
@@ -148,13 +149,20 @@
 </table>
 
 @code {
+    private string buyString = "Buy";
+    private string sellString = "Sell";
     PriceChart priceChart;
 
     private string selectedCryptocurrency;
     private decimal amount;
     private decimal? averagePrice;
     private decimal? pricePaidAll;
-    private string transactionType;
+    private string transactionType = "Buy";
+
+    private void selectTransactionType(string type)
+    {
+        transactionType = type;
+    }
 
     private List<string> cryptocurrencies = new List<string> { "Bitcoin", "Ethereum", "Cronos" }; // Beispielhafte Liste
 
