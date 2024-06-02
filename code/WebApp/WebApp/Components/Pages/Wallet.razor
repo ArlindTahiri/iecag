@@ -73,7 +73,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        /*
+        /*  
         //Get all the transactions from the Azure Table
         var options = AzureTableStorageOptions.Value;
 
@@ -120,47 +120,52 @@
         // Erstelle Empty WalletEntries nur mit dem Namen
         walletEntries = allTransactionsOfUser.Select(transaction => new WalletEntry { Name = transaction.CryptocurrencyName }).Distinct().ToList();
 
+
         // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
         foreach (var walletEntry in walletEntries)
         {
-            var AlltransactionsOfCurrency = allTransactionsOfUser.Where(transaction => transaction.CryptocurrencyName == walletEntry.Name).ToList();
+            var AlltransactionsOfCurrency = allTransactionsOfUser
+                .Where(transaction => transaction.CryptocurrencyName == walletEntry.Name)
+                .OrderBy(t => t.TransactionDate)
+                .ToList();
             walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
 
             // Berechne den durchschnittlichen Kaufpreis
             if (walletEntry.Amount > 0)
             {
-                var AllTransactionsSinceLastAmountZero = new List<TransactionEntry>();
-                decimal amount = 0;
-                var AlltransactionsSorted = AlltransactionsOfCurrency.OrderBy(t => t.TransactionDate).ToList();
-                foreach (var transaction in AlltransactionsSorted)
+                decimal totalAmount = 0;
+                decimal totalCost = 0;
+
+                foreach (var transaction in AlltransactionsOfCurrency)
                 {
                     if (transaction.TransactionType == "Buy")
                     {
-                        AllTransactionsSinceLastAmountZero.Add(transaction);
-                        amount += transaction.Amount;
+                        totalCost += transaction.PricePaidAll;
+                        totalAmount += transaction.Amount;
                     }
-                    else // TransactionType == "Sell"
+                    else if (transaction.TransactionType == "Sell")
                     {
-                        AllTransactionsSinceLastAmountZero.Add(transaction);
-                        amount -= transaction.Amount;
-                    }
-                    if (amount == 0)
-                    {
-                        break;
+                        // Berechne den durchschnittlichen Kaufpreis vor dem Verkauf
+                        decimal averageBuyPrice = totalCost / totalAmount;
+
+                        // Reduziere die Kosten um den Verkaufspreis
+                        totalCost -= transaction.Amount * averageBuyPrice;
+                        totalAmount -= transaction.Amount;
                     }
                 }
 
-                walletEntry.AveragePrice = AllTransactionsSinceLastAmountZero.Average(transaction => transaction.TransactionType == "Buy" ? transaction.PricePaidAll : 0);
+                // Setze den durchschnittlichen Kaufpreis
+                walletEntry.AveragePrice = totalCost / totalAmount;
             }
 
         }
 
+
+        // Erstelle PortfolioValueList für 180 Tage
         var cryptocurrencyNameColumn2 = "cryptocurrencyName";
         var price = "price";
         var dateTimeStamp = "dateTimeStamp";
 
-
-        // Erstelle PortfolioValueList für 180 Tage
         foreach (var walletEntry in walletEntries)
         {
             // Abfrage zum Abrufen der Transaktionen des Benutzers
