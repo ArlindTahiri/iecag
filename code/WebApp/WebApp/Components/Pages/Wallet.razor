@@ -17,6 +17,106 @@
 
 <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" />
 
+
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transactionModal">
+    Add Transaction
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="transactionModalLabel">Add Transaction</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="transactionType">Transaction Type</label>
+                    <select class="form-select mt-2" @bind="transactionType">
+                        <option value="Buy">Buy</option>
+                        <option value="Sell">Sell</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="selectCryptocurrency">Select Cryptocurrency</label>
+                    <select class="form-select mt-2" @bind="selectedCryptocurrency">
+                        <option value="" disabled selected>Select a cryptocurrency</option>
+                        @foreach (var crypto in cryptocurrencies)
+                        {
+                            <option value="@crypto">@crypto</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group mt-3">
+                    <label for="amount">Amount</label>
+                    <input type="number" class="form-control" id="amount" @bind="amount" oninput="calculatePricePaidAllOrAveragePrice()">
+                </div>
+                <div class="form-group mt-3 row">
+                    <div class="col">
+                        <label for="averagePrice">Average Price</label>
+                        <input type="number" class="form-control" id="averagePrice" @bind="averagePrice" oninput="calculatePricePaidAll()">
+                    </div>
+                    <div class="col">
+                        <label for="pricePaidAll">Price Paid All</label>
+                        <input type="number" class="form-control" id="pricePaidAll" @bind="pricePaidAll" oninput="calculateAveragePrice()">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @onclick="AddTransaction">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var lastInputField;
+
+    function calculatePricePaidAllOrAveragePrice() {
+        if (lastInputField == "pricePaidAll") {
+            
+            var averagePrice = parseFloat(document.getElementById("averagePrice").value);
+            var amount = parseFloat(document.getElementById("amount").value);
+            if (!isNaN(averagePrice) && !isNaN(amount)) {
+                var pricePaidAll = averagePrice * amount;
+                document.getElementById("pricePaidAll").value = pricePaidAll.toFixed(2);
+            }
+        }
+        else {
+            var pricePaidAll = parseFloat(document.getElementById("pricePaidAll").value);
+            var amount = parseFloat(document.getElementById("amount").value);
+            if (!isNaN(pricePaidAll) && !isNaN(amount)) {
+                var averagePrice = pricePaidAll / amount;
+                document.getElementById("averagePrice").value = averagePrice.toFixed(2);
+            }
+        }
+    }
+
+    function calculatePricePaidAll() {
+        lastInputField = "pricePaidAll";
+        var averagePrice = parseFloat(document.getElementById("averagePrice").value);
+        var amount = parseFloat(document.getElementById("amount").value);
+        if (!isNaN(averagePrice) && !isNaN(amount)) {
+            var pricePaidAll = averagePrice * amount;
+            document.getElementById("pricePaidAll").value = pricePaidAll.toFixed(2);
+        }
+        
+    }
+
+    function calculateAveragePrice() {
+        lastInputField = "averagePrice";
+        var pricePaidAll = parseFloat(document.getElementById("pricePaidAll").value);
+        var amount = parseFloat(document.getElementById("amount").value);
+        if (!isNaN(pricePaidAll) && !isNaN(amount)) {
+            var averagePrice = pricePaidAll / amount;
+            document.getElementById("averagePrice").value = averagePrice.toFixed(2);
+        }
+    }
+</script>
+
 <table class="table">
     <thead>
         <tr>
@@ -49,6 +149,15 @@
 
 @code {
     PriceChart priceChart;
+
+    private string selectedCryptocurrency;
+    private decimal amount;
+    private decimal? averagePrice;
+    private decimal? pricePaidAll;
+    private string transactionType;
+
+    private List<string> cryptocurrencies = new List<string> { "Bitcoin", "Ethereum", "Cronos" }; // Beispielhafte Liste
+
 
     public List<KeyValuePair<DateTime, decimal>> priceList { get; set; } = new List<KeyValuePair<DateTime, decimal>>
     {
@@ -91,30 +200,30 @@
         var cryptocurrencyNameColumn = "cryptocurrencyName";
         var amountColumn = "amount";
         var pricePaidAllColumn = "pricePaidAll";
-        var transactionDateColumn = "transactionDate";
-        var transactionTypeColumn = "transactionType";
+            var transactionDateColumn = "transactionDate";
+            var transactionTypeColumn = "transactionType";
 
-        // Abfrage zum Abrufen der Transaktionen des Benutzers
-        var userTransactionsQuery = tableClientTransactions.QueryAsync<TableEntity>(
-            filter: $"{userIdColumn} eq '{userName}'",
-            select: new[] { cryptocurrencyNameColumn, amountColumn, pricePaidAllColumn, transactionDateColumn, transactionTypeColumn }
-        );
+            // Abfrage zum Abrufen der Transaktionen des Benutzers
+            var userTransactionsQuery = tableClientTransactions.QueryAsync<TableEntity>(
+        filter: $"{userIdColumn} eq '{userName}'",
+        select: new[] { cryptocurrencyNameColumn, amountColumn, pricePaidAllColumn, transactionDateColumn, transactionTypeColumn }
+                    );
 
-        List<TransactionEntry> allTransactionsOfUser = new List<TransactionEntry>();
+                    List<TransactionEntry> allTransactionsOfUser = new List<TransactionEntry>();
 
-        await foreach (var entity in userTransactionsQuery)
-        {
-            var transaction = new TransactionEntry
-                {
+                    await foreach (var entity in userTransactionsQuery)
+                    {
+                    var transaction = new TransactionEntry
+                    {
                     UserId = entity.GetString(userIdColumn),
                     CryptocurrencyName = entity.GetString(cryptocurrencyNameColumn),
                     Amount = Convert.ToDecimal(entity[amountColumn]),
                     PricePaidAll = Convert.ToDecimal(entity[pricePaidAllColumn]),
-                    TransactionDate = entity.GetDateTime(transactionDateColumn).GetValueOrDefault(),
-                    TransactionType = entity.GetString(transactionTypeColumn)
-                };
+            TransactionDate = entity.GetDateTime(transactionDateColumn).GetValueOrDefault(),
+        TransactionType = entity.GetString(transactionTypeColumn)
+        };
 
-            allTransactionsOfUser.Add(transaction);
+        allTransactionsOfUser.Add(transaction);
         }
 
         // Erstelle Empty WalletEntries nur mit dem Namen
@@ -123,21 +232,21 @@
 
 
 
-        // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
-        foreach (var walletEntry in walletEntries)
-        {
-            var AlltransactionsOfCurrency = allTransactionsOfUser
-                .Where(transaction => transaction.CryptocurrencyName == walletEntry.Name)
-                .OrderBy(t => t.TransactionDate)
-                .ToList();
+            // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
+                foreach (var walletEntry in walletEntries)
+                {
+                var AlltransactionsOfCurrency = allTransactionsOfUser
+            .Where(transaction => transaction.CryptocurrencyName == walletEntry.Name)
+            .OrderBy(t => t.TransactionDate)
+            .ToList();
             walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
 
-            // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
-            if (walletEntry.Amount > 0)
-            {
+                // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
+                if (walletEntry.Amount > 0)
+                {
                 // Setze den durchschnittlichen Kaufpreis
-                walletEntry.AveragePrice = FinanceCalculations.CalculateAveragePrice(AlltransactionsOfCurrency);
-            }
+        walletEntry.AveragePrice = FinanceCalculations.CalculateAveragePrice(AlltransactionsOfCurrency);
+        }
 
         }
 
@@ -145,20 +254,20 @@
         // Erstelle PortfolioValueList für 180 Tage
         var cryptocurrencyNameColumn2 = "cryptocurrencyName";
         var price = "price";
-        var dateTimeStamp = "dateTimeStamp";
+            var dateTimeStamp = "dateTimeStamp";
 
-        foreach (var walletEntry in walletEntries)
-        {
+            foreach (var walletEntry in walletEntries)
+            {
             // Abfrage zum Abrufen der Transaktionen des Benutzers
-            var historicalPricesQuery = tableClientPrices.QueryAsync<TableEntity>(
+                var historicalPricesQuery = tableClientPrices.QueryAsync<TableEntity>(
                 filter: $"{cryptocurrencyNameColumn2} eq '{walletEntry.Name}'",
-                select: new[] { cryptocurrencyNameColumn2, price, dateTimeStamp }
+            select: new[] { cryptocurrencyNameColumn2, price, dateTimeStamp }
             );
 
             List<KeyValuePair<DateTime, decimal>> historicalPricesOfCryptoCurrency = new List<KeyValuePair<DateTime, decimal>>();
 
-            await foreach (var entity in historicalPricesQuery)
-            {
+                await foreach (var entity in historicalPricesQuery)
+                {
                 var transaction = new KeyValuePair<DateTime, decimal>(entity.GetDateTime(dateTimeStamp).GetValueOrDefault(), Convert.ToDecimal(entity[price]));
 
                 historicalPricesOfCryptoCurrency.Add(transaction);
@@ -169,17 +278,17 @@
             historicalPricesOfCryptoCurrency = FinanceCalculations.CalculatePortfolioValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
 
             // now add values to priceList
-            if (priceList.Count == 0)
-            {
+                if (priceList.Count == 0)
+                {
                 priceList = historicalPricesOfCryptoCurrency;
             }
-            else
-            {
-                for (int j = 0; j < priceList.Count; j++)
+                else
                 {
+                for (int j = 0; j < priceList.Count; j++)
+                    {
                     priceList[j] = new KeyValuePair<DateTime, decimal>(priceList[j].Key, priceList[j].Value + historicalPricesOfCryptoCurrency[j].Value);
-                }
             }
+        }
 
         }
         */
@@ -221,6 +330,42 @@
     private void RedirectToCryptocurrency(string name)
     {
         Navigation.NavigateTo($"cryptocurrencies/{name}");
+    }
+
+    private async Task AddTransaction()
+    {
+        var options = AzureTableStorageOptions.Value;
+
+        var serviceClient = new TableServiceClient(new Uri(options.TableEndpoint), new TableSharedKeyCredential(options.AccountName, options.AccountKey));
+        var tableClientTransactions = serviceClient.GetTableClient("Transactions");
+
+
+    }
+
+    [JSInvokable]
+    public async Task CalculatePricePaidAll()
+    {
+        if (averagePrice.HasValue)
+        {
+            pricePaidAll = averagePrice * amount;
+        }
+        else
+        {
+            pricePaidAll = null;
+        }
+    }
+
+    [JSInvokable]
+    public async Task CalculateAveragePrice()
+    {
+        if (pricePaidAll.HasValue)
+        {
+            averagePrice = pricePaidAll / amount;
+        }
+        else
+        {
+            averagePrice = null;
+        }
     }
 
 }
