@@ -73,7 +73,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        /*  
+        /*
         //Get all the transactions from the Azure Table
         var options = AzureTableStorageOptions.Value;
 
@@ -121,6 +121,8 @@
         walletEntries = allTransactionsOfUser.Select(transaction => new WalletEntry { Name = transaction.CryptocurrencyName }).Distinct().ToList();
 
 
+
+
         // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
         foreach (var walletEntry in walletEntries)
         {
@@ -130,32 +132,11 @@
                 .ToList();
             walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
 
-            // Berechne den durchschnittlichen Kaufpreis
+            // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
             if (walletEntry.Amount > 0)
             {
-                decimal totalAmount = 0;
-                decimal totalCost = 0;
-
-                foreach (var transaction in AlltransactionsOfCurrency)
-                {
-                    if (transaction.TransactionType == "Buy")
-                    {
-                        totalCost += transaction.PricePaidAll;
-                        totalAmount += transaction.Amount;
-                    }
-                    else if (transaction.TransactionType == "Sell")
-                    {
-                        // Berechne den durchschnittlichen Kaufpreis vor dem Verkauf
-                        decimal averageBuyPrice = totalCost / totalAmount;
-
-                        // Reduziere die Kosten um den Verkaufspreis
-                        totalCost -= transaction.Amount * averageBuyPrice;
-                        totalAmount -= transaction.Amount;
-                    }
-                }
-
                 // Setze den durchschnittlichen Kaufpreis
-                walletEntry.AveragePrice = totalCost / totalAmount;
+                walletEntry.AveragePrice = FinanceCalculations.CalculateAveragePrice(AlltransactionsOfCurrency);
             }
 
         }
@@ -185,27 +166,7 @@
 
             historicalPricesOfCryptoCurrency = historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList();
 
-            var AlltransactionsOfCurrencyOfLast180Days = allTransactionsOfUser
-            .Where(transaction => transaction.CryptocurrencyName == walletEntry.Name && transaction.TransactionDate <= DateTime.Today.AddDays(-180))
-            .OrderBy(t => t.TransactionDate)
-            .ToList();
-
-            // Hier wird für die CryptoCurrency jeder Wert des Zeitstahls berechnet. Und löscht AlltransactionsOfCurrencyOfLast180Days um performanter zu sein.
-            decimal runningAmount = 0;
-            for (int i = 0; i < historicalPricesOfCryptoCurrency.Count; i++)
-            {
-                var date = historicalPricesOfCryptoCurrency[i].Key;
-
-                // Aktualisiere runningAmount basierend auf Transaktionen bis zum aktuellen historischen Preisdatum
-                while (AlltransactionsOfCurrencyOfLast180Days.Count > 0 && AlltransactionsOfCurrencyOfLast180Days[0].TransactionDate <= date)
-                {
-                    var transaction = AlltransactionsOfCurrencyOfLast180Days[0];
-                    runningAmount += transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount;
-                    AlltransactionsOfCurrencyOfLast180Days.RemoveAt(0);
-                }
-
-                historicalPricesOfCryptoCurrency[i] = new KeyValuePair<DateTime, decimal>(date, historicalPricesOfCryptoCurrency[i].Value * runningAmount);
-            }
+            historicalPricesOfCryptoCurrency = FinanceCalculations.CalculatePortfolioValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
 
             // now add values to priceList
             if (priceList.Count == 0)
