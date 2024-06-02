@@ -178,16 +178,28 @@
                 historicalPricesOfCryptoCurrency.Add(transaction);
             }
 
-            var AlltransactionsOfCurrencyOfLast180Days = allTransactionsOfUser.Where(transaction => transaction.CryptocurrencyName == walletEntry.Name && transaction.TransactionDate <= DateTime.Today.AddDays(-180)).ToList();
+            historicalPricesOfCryptoCurrency = historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList();
 
+            var AlltransactionsOfCurrencyOfLast180Days = allTransactionsOfUser
+            .Where(transaction => transaction.CryptocurrencyName == walletEntry.Name && transaction.TransactionDate <= DateTime.Today.AddDays(-180))
+            .OrderBy(t => t.TransactionDate)
+            .ToList();
+
+            // Hier wird für die CryptoCurrency jeder Wert des Zeitstahls berechnet. Und löscht AlltransactionsOfCurrencyOfLast180Days um performanter zu sein.
+            decimal runningAmount = 0;
             for (int i = 0; i < historicalPricesOfCryptoCurrency.Count; i++)
             {
                 var date = historicalPricesOfCryptoCurrency[i].Key;
-                var relevantAmount = AlltransactionsOfCurrencyOfLast180Days
-                    .Where(transaction => transaction.TransactionDate <= date)
-                    .Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
 
-                historicalPricesOfCryptoCurrency[i] = new KeyValuePair<DateTime, decimal>(date, historicalPricesOfCryptoCurrency[i].Value * relevantAmount);
+                // Aktualisiere runningAmount basierend auf Transaktionen bis zum aktuellen historischen Preisdatum
+                while (AlltransactionsOfCurrencyOfLast180Days.Count > 0 && AlltransactionsOfCurrencyOfLast180Days[0].TransactionDate <= date)
+                {
+                    var transaction = AlltransactionsOfCurrencyOfLast180Days[0];
+                    runningAmount += transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount;
+                    AlltransactionsOfCurrencyOfLast180Days.RemoveAt(0);
+                }
+
+                historicalPricesOfCryptoCurrency[i] = new KeyValuePair<DateTime, decimal>(date, historicalPricesOfCryptoCurrency[i].Value * runningAmount);
             }
 
             // now add values to priceList
