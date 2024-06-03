@@ -4,6 +4,10 @@
 @inject NavigationManager Navigation;
 @using WebApp.Components.SubComponents;
 @implements IAsyncDisposable
+@using Microsoft.Extensions.Options;
+@inject IOptions<AzureTableStorageOptions> AzureTableStorageOptions;
+@using Azure.Data.Tables;
+
 
 <PageTitle>IeCAG - Cryptocurrencies</PageTitle>
 
@@ -12,61 +16,69 @@
 <table class="table table-hover">
     <thead>
         <tr>
-            <th>Symbol</th>
+            <th>Name</th>
             <th>Price</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var priceEntry in priceEntries)
         {
-            <tr @onclick="(() => RedirectToCryptocurrency(priceEntry.Symbol))" style="cursor: pointer;" title="Klicken, um Details von @priceEntry.Symbol anzuzeigen">
-                <td>@priceEntry.Symbol</td>
+            <tr @onclick="(() => RedirectToCryptocurrency(priceEntry.Name))" style="cursor: pointer;" title="Klicken, um Details von @priceEntry.Name anzuzeigen">
+                <td>@priceEntry.Name</td>
                 <td>@priceEntry.Price</td>
             </tr>
         }
     </tbody>
 </table>
-<!--
-<PriceChart Symbol="BTC" pricesList="Priceslol" @ref="priceChart" />
--->
+
 @code {
     PriceChart priceChart;
-
-    public List<KeyValuePair<DateTime, decimal>> Priceslol { get; set; } = new List<KeyValuePair<DateTime, decimal>>
-{
-    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-30), 48000),
-    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-25), 48500),
-    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-20), 49000),
-    
-    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-15), 49500),
-    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-10), 50000),
-    new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-5), 50500),
-    new KeyValuePair<DateTime, decimal>(DateTime.Now, 51000),
-};
 
     private List<PriceEntry> priceEntries = new List<PriceEntry>();
     private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
+        /*
+        //Get all the prices from the Azure Table
+        var options = AzureTableStorageOptions.Value;
+
+        // Verbindung zu Azure Table Storage herstellen
+        var serviceClient = new TableServiceClient(new Uri(options.TableEndpoint), new TableSharedKeyCredential(options.AccountName, options.AccountKey));
+        var tableClient = serviceClient.GetTableClient("CurrentPrices");
+
+        // Lade alle Einträge aus der Tabelle
+        await foreach (var entity in tableClient.QueryAsync<TableEntity>())
+        {
+            priceEntries.Add(new PriceEntry
+                {
+                    Name = entity.PartitionKey,
+                    Price = (decimal?)entity["Price"]
+                });
+        }
+        */
+
+
+
+        // Connect to the SignalR PriceHub
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
             .Build();
 
-        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (symbol, price) =>
+        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (name, price) =>
         {
-            var existingEntry = priceEntries.FirstOrDefault(entry => entry.Symbol == symbol);
+            var existingEntry = priceEntries.FirstOrDefault(entry => entry.Name == name);
             if (existingEntry != null)
             {
                 existingEntry.Price = price; // Aktualisiere den Preis des vorhandenen Eintrags
-                if (symbol.Equals("BTC"))
+                if (name.Equals("Bitcoin"))
                 {
                     //await priceChart.UpdateChart(DateTime.Now, (decimal)price);
                 }
             }
             else
             {
-                priceEntries.Add(new PriceEntry { Symbol = symbol, Price = price }); // Füge einen neuen Eintrag hinzu, wenn das Symbol noch nicht vorhanden ist
+                priceEntries.Add(new PriceEntry { Name = name, Price = price }); // Füge einen neuen Eintrag hinzu, wenn das Name noch nicht vorhanden ist
             }
             InvokeAsync(StateHasChanged);
         });
@@ -86,14 +98,8 @@
     }
 
 
-    public class PriceEntry
+    private void RedirectToCryptocurrency(string name)
     {
-        public string Symbol { get; set; }
-        public decimal? Price { get; set; }
-    }
-
-    private void RedirectToCryptocurrency(string symbol)
-    {
-        Navigation.NavigateTo($"cryptocurrencies/{symbol}");
+        Navigation.NavigateTo($"cryptocurrencies/{name}");
     }
 }

@@ -26,13 +26,13 @@ namespace WebApp.Services
             lock (_lock)
             {
                 // Code to fetch data from backend
-                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/crypto-com-chain", "CRO");
-                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/bitcoin", "BTC");
-                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/ethereum", "ETH");
+                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/crypto-com-chain", "Cronos");
+                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/bitcoin", "Bitcoin");
+                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/ethereum", "Ethereum");
             }
         }
 
-        public async Task FetchPriceFromBackend(string url, string symbol)
+        public async Task FetchPriceFromBackend(string url, string name)
         {
             try
             {
@@ -44,12 +44,24 @@ namespace WebApp.Services
                     string responseData = await response.Content.ReadAsStringAsync();
                     var obj = JsonSerializer.Deserialize<CoinGeckoResponse>(responseData);
                     decimal? price = obj?.market_data?.current_price?.eur;
-                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", symbol, price);
+                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, price);
                 }
                 else
                 {
                     Random random = new Random();
-                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", symbol, random.Next(50000, 51000));
+                    if (name.Equals("Cronos"))
+                    {
+                        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, (decimal)random.Next(90, 130)/1000);
+                    }
+                    if (name.Equals("Bitcoin"))
+                    {
+                        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, random.Next(60000, 63000));
+                    }
+                    if (name.Equals("Ethereum"))
+                    {
+                        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, random.Next(3400, 3600));
+                    }
+                    
                     Console.WriteLine($"Failed to fetch data from {url}. Status code: {response.StatusCode}");
                 }
             }

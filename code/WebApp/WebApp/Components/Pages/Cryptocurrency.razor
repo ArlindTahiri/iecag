@@ -1,4 +1,4 @@
-﻿@page "/cryptocurrencies/{Symbol}"
+﻿@page "/cryptocurrencies/{Name}"
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation;
 @using WebApp.Components.SubComponents;
@@ -6,12 +6,12 @@
 @implements IAsyncDisposable
 
 
-<h1>@Symbol at @Price €</h1>
+<h1>@Name at @Price €</h1>
 
-<PriceChart Symbol="@Symbol" pricesList="priceList" @ref="priceChart" />
+<PriceChart Name="@Name" pricesList="priceList" @ref="priceChart" />
 
 @code {
-    [Parameter] public string Symbol { get; set; }
+    [Parameter] public string Name { get; set; }
     public decimal Price { get; set; }
     PriceChart priceChart;
     private HubConnection hubConnection;
@@ -34,9 +34,9 @@
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
         .Build();
 
-        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (symbol, price) =>
+        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (name, price) =>
             {
-                if (symbol == Symbol)
+                if (name == Name)
                 {
                     await priceChart.UpdateChart(DateTime.Now, (decimal)price);
                     Price = (decimal)price;

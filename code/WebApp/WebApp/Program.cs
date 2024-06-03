@@ -2,6 +2,7 @@ using WebApp.Components;
 using WebApp.Services;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using WebApp.Models.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<DataFetcherService>();
 builder.Services.AddHttpClient();
 
+builder.Services.Configure<AzureTableStorageOptions>(builder.Configuration.GetSection("AzureTableStorage"));
+
 builder.Services.AddResponseCompression(opts =>
 {
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
@@ -42,8 +45,9 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
-app.UseAuthorization();
 app.UseAuthentication();
+app.UseAuthorization();
+
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
