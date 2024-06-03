@@ -1,0 +1,99 @@
+variables:
+  RESOURCE_GROUP:
+    description: "the resource goup name"
+    value: "IeCAG-INFCA"
+  DEPLOY:
+    description: "Deploying the infrastructure"
+    value: "true"
+  NUKE:
+    description: "Nuke the resource group"
+    value: "true"
+  STORAGE_ACCOUNT:
+    description: "the storage account name"
+    value: "iecagstorage"
+  COSMOSDB_DATA_ACCOUNT:
+    description: "the cosmos db account"
+    value: "iecagcosmos"
+  TABLE_CURRENT_PRICE:
+    description: "current price table name"
+    value: "current_prices"
+  TABLE_PRICE_HISTORY:
+    description: "price history table name"
+    value: "price_history"
+
+stages:
+  - azure_setup
+  - build
+  - deploy
+
+default:
+  image: inf-docker.fh-rosenheim.de/inf-ca/sose2024/iecag/azure-cli
+  before_script:
+    - az login --service-principal --username $SP_ID --password $SP_SECRET --tenant $SP_TENANT_ID
+    - az account set --subscription $SUBSCRIPTION_ID
+    - set -euo pipefail
+
+tilly_nuke:
+  stage: azure_setup
+  image: inf-docker.fh-rosenheim.de/inf-ca/sose2024/iecag/azure-cli
+  allow_failure: true
+  script:
+    - if [ $NUKE == "true" ]; then az group delete --yes --name $RESOURCE_GROUP; fi || exit 0
+  rules:
+    - if: '$DEPLOY == "true"'
+
+terraform:
+  stage: deploy
+  image: 
+    name: hashicorp/terraform:latest
+    entrypoint:
+      - '/usr/bin/env'
+      - 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'
+  before_script: 
+    - apk update && apk add ca-certificates
+    - mkdir -p /etc/ssl/certs
+    - cp $CI_PROJECT_DIR/terraform/.thro.crt /etc/ssl/certs/custom-ca-bundle.crt
+    - update-ca-certificates
+  script:
+    - cd terraform 
+    - terraform init
+    - terraform plan -var="client_id=$SP_ID" -var="client_secret=$SP_SECRET" -var="tenant_id=$SP_TENANT_ID" -var="subscription_id=$SUBSCRIPTION_ID" -var="ci_registry=$CI_REGISTRY" -var="ci_registry_user=$CI_REGISTRY_USER" -var="ci_registry_pw=$CI_REGISTRY_PASSWORD" -out=tfplan
+    - terraform apply -auto-approve
+  artifacts:
+    paths:
+      - terraform/tfplan
+  needs:
+    - tilly_nuke
+  rules:
+    - if: '$DEPLOY == "true"'
+  when: manual
+
+# azure_setup job could "fail" due to resources already existing.
+# This could be checked for, but currently I am just happy to have fixed the azure-cli certificate problem.
+# The allow_failure documents some allowed exit codes.
+# And yes, the `|| exit 0` is terrible, but it makes the pipeline a pretty green.
+azure_create_resource_group:
+  stage: azure_setup
+  allow_failure:
+    exit_codes:
+      - 0
+      - 1
+  needs:
+    - tilly_nuke
+  script:
+    - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
+  rules:
+    - if: '$DEPLOY == "true"'
+
+azure_create_datatable:
+  stage: azure_setup
+  allow_failure: true
+  needs:
+    - azure_create_resource_group
+  script:
+    - az storage account create -n $STORAGE_ACCOUNT -g $RESOURCE_GROUP -l westus --subscription $SUBSCRIPTION_ID || exit 0
+    - az cosmosdb create --name $COSMOSDB_DATA_ACCOUNT --capabilities EnableTable --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION_ID || exit 0
+    - az cosmosdb table create --name $TABLE_CURRENT_PRICE --resource-group $RESOURCE_GROUP --account-name $COSMOSDB_DATA_ACCOUNT || exit 0
+    - az cosmosdb table create --name $TABLE_PRICE_HISTORY --resource-group $RESOURCE_GROUP --account-name $COSMOSDB_DATA_ACCOUNT || exit 0
+  rules:
+    - if: '$DEPLOY == "true"'
