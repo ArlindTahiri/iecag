@@ -5,6 +5,9 @@ variables:
   DEPLOY:
     description: "Deploying the infrastructure"
     value: "true"
+  NUKE:
+    description: "Nuke the resource group"
+    value: "true"
   STORAGE_ACCOUNT:
     description: "the storage account name"
     value: "iecagstorage"
@@ -31,11 +34,11 @@ default:
     - set -euo pipefail
 
 tilly_nuke:
-  stage: deploy
+  stage: azure_setup
   image: inf-docker.fh-rosenheim.de/inf-ca/sose2024/iecag/azure-cli
   allow_failure: true
   script:
-    - az group delete --yes --name $RESOURCE_GROUP || exit 0
+    - if [ $NUKE == "true" ]; then az group delete --yes --name $RESOURCE_GROUP; fi || exit 0
   rules:
     - if: '$DEPLOY == "true"'
 
@@ -75,6 +78,8 @@ azure_create_resource_group:
     exit_codes:
       - 0
       - 1
+  needs:
+    - tilly_nuke
   script:
     - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
   rules:
