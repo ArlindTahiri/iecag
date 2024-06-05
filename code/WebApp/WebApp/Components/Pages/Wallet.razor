@@ -197,6 +197,9 @@
 
 
     private HubConnection? hubConnection;
+    
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
