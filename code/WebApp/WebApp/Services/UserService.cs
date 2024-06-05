@@ -36,7 +36,7 @@ namespace WebApp.Services
 
         public async Task<bool> ValidateUserAsync(string userId, string enteredPassword)
         {
-            var entity = await _tableClient.GetEntityAsync<User>(userId, "user");
+            var entity = await _tableClient.GetEntityIfExistsAsync<User>(userId, "user");
             if (entity.HasValue)
             {
                 var user = entity.Value;
