@@ -10,6 +10,8 @@
 @using WebApp.Components.SubComponents;
 @implements IAsyncDisposable
 @using Microsoft.Extensions.Options;
+@inject TransactionService transactionService;
+@inject DataFetcherService dataFetcherService;
 
 
 <PageTitle>IeCAG - Wallet</PageTitle>
@@ -143,7 +145,7 @@
             var averagePrice = walletEntry.AveragePrice;
             var priceChange = walletEntry.CurrentPrice.HasValue && averagePrice.HasValue
             ? Math.Round(((walletEntry.CurrentPrice.Value - averagePrice.Value) / averagePrice.Value) * 100, 2)
-            : (decimal?)null;
+            : (double?)null;
             <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Name anzuzeigen">
                 <td>@walletEntry.Name</td>
                 <td>@walletEntry.CurrentPrice</td>
@@ -176,143 +178,80 @@
     private List<string> cryptocurrencies = new List<string> { "Bitcoin", "Ethereum", "Cronos" }; // Beispielhafte Liste
 
 
-    public List<KeyValuePair<DateTime, decimal>> priceList { get; set; } = new List<KeyValuePair<DateTime, decimal>>
+    public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>
     {
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-30), 34200),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-25), 34800),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-20), 37400),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-15), 36000),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-10), 36600),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-5), 37200),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now, 37000),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-30), 34200),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-25), 34800),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-20), 37400),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-15), 36000),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-10), 36600),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-5), 37200),
+        new KeyValuePair<DateTime, double>(DateTime.Now, 37000),
     };
 
     private List<WalletEntry> walletEntries = new List<WalletEntry>
     {
-        new WalletEntry { Name = "Bitcoin", Amount = 0.5m, AveragePrice = 45000m, CurrentPrice = 48000m },
-        new WalletEntry { Name = "Ethereum", Amount = 2m, AveragePrice = 3000m, CurrentPrice = 3200m },
-        new WalletEntry { Name = "Cronos", Amount = 1000m, AveragePrice = 0.2m, CurrentPrice = 0.25m }
+        new WalletEntry { Name = "Bitcoin", Amount = 0.5, AveragePrice = 45000, CurrentPrice = 48000 },
+        new WalletEntry { Name = "Ethereum", Amount = 2, AveragePrice = 3000, CurrentPrice = 3200 },
+        new WalletEntry { Name = "Cronos", Amount = 1000, AveragePrice = 0.2, CurrentPrice = 0.25 }
     };
 
 
     private HubConnection? hubConnection;
-    
+
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        /*
-        //Get all the transactions from the Azure Table
-        var options = AzureTableStorageOptions.Value;
+        var userName = HttpContext.User.Identity.Name;
+        
 
-        var serviceClient = new TableServiceClient(new Uri(options.TableEndpoint), new TableSharedKeyCredential(options.AccountName, options.AccountKey));
-        var tableClientTransactions = serviceClient.GetTableClient("Transactions");
-        var tableClientPrices = serviceClient.GetTableClient("HistoricalPrices180Days");
-
-        var identity = (ClaimsIdentity)HttpContext.User.Identity;
-        var userNameClaim = identity.FindFirst(ClaimTypes.Name);
-        var userName = userNameClaim?.Value;
-
-
-        // Definieren der Spaltennamen
-        var userIdColumn = "userId";
-        var cryptocurrencyNameColumn = "cryptocurrencyName";
-        var amountColumn = "amount";
-        var pricePaidAllColumn = "pricePaidAll";
-            var transactionDateColumn = "transactionDate";
-            var transactionTypeColumn = "transactionType";
-
-            // Abfrage zum Abrufen der Transaktionen des Benutzers
-            var userTransactionsQuery = tableClientTransactions.QueryAsync<TableEntity>(
-        filter: $"{userIdColumn} eq '{userName}'",
-        select: new[] { cryptocurrencyNameColumn, amountColumn, pricePaidAllColumn, transactionDateColumn, transactionTypeColumn }
-                    );
-
-                    List<TransactionEntry> allTransactionsOfUser = new List<TransactionEntry>();
-
-                    await foreach (var entity in userTransactionsQuery)
-                    {
-                    var transaction = new TransactionEntry
-                    {
-                    UserId = entity.GetString(userIdColumn),
-                    CryptocurrencyName = entity.GetString(cryptocurrencyNameColumn),
-                    Amount = Convert.ToDecimal(entity[amountColumn]),
-                    PricePaidAll = Convert.ToDecimal(entity[pricePaidAllColumn]),
-            TransactionDate = entity.GetDateTime(transactionDateColumn).GetValueOrDefault(),
-        TransactionType = entity.GetString(transactionTypeColumn)
-        };
-
-        allTransactionsOfUser.Add(transaction);
-        }
+        List<Transaction> allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(userName);
 
         // Erstelle Empty WalletEntries nur mit dem Namen
-        walletEntries = allTransactionsOfUser.Select(transaction => new WalletEntry { Name = transaction.CryptocurrencyName }).Distinct().ToList();
+        walletEntries = allTransactionsOfUser.Select(transaction => new WalletEntry { Name = transaction.coin }).Distinct().ToList();
 
 
+        // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
+        foreach (var walletEntry in walletEntries)
+        {
+            var AlltransactionsOfCurrency = allTransactionsOfUser
+                .Where(transaction => transaction.coin == walletEntry.Name)
+                .OrderBy(t => t.TransactionDate)
+                .ToList();
 
+            walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.amount : -transaction.amount);
 
-            // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
-                foreach (var walletEntry in walletEntries)
-                {
-                var AlltransactionsOfCurrency = allTransactionsOfUser
-            .Where(transaction => transaction.CryptocurrencyName == walletEntry.Name)
-            .OrderBy(t => t.TransactionDate)
-            .ToList();
-            walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
-
-                // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
-                if (walletEntry.Amount > 0)
-                {
-                // Setze den durchschnittlichen Kaufpreis
-        walletEntry.AveragePrice = FinanceCalculations.CalculateAveragePrice(AlltransactionsOfCurrency);
-        }
-
-        }
-
-
-        // Erstelle PortfolioValueList für 180 Tage
-        var cryptocurrencyNameColumn2 = "cryptocurrencyName";
-        var price = "price";
-            var dateTimeStamp = "dateTimeStamp";
-
-            foreach (var walletEntry in walletEntries)
+            // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
+            if (walletEntry.Amount > 0)
             {
-            // Abfrage zum Abrufen der Transaktionen des Benutzers
-                var historicalPricesQuery = tableClientPrices.QueryAsync<TableEntity>(
-                filter: $"{cryptocurrencyNameColumn2} eq '{walletEntry.Name}'",
-            select: new[] { cryptocurrencyNameColumn2, price, dateTimeStamp }
-            );
-
-            List<KeyValuePair<DateTime, decimal>> historicalPricesOfCryptoCurrency = new List<KeyValuePair<DateTime, decimal>>();
-
-                await foreach (var entity in historicalPricesQuery)
-                {
-                var transaction = new KeyValuePair<DateTime, decimal>(entity.GetDateTime(dateTimeStamp).GetValueOrDefault(), Convert.ToDecimal(entity[price]));
-
-                historicalPricesOfCryptoCurrency.Add(transaction);
+                // Setze den durchschnittlichen Kaufpreis
+                walletEntry.AveragePrice = HelperClasses.FinanceCalculations.CalculateAveragePrice(AlltransactionsOfCurrency);
             }
+        }
 
+        foreach (var walletEntry in walletEntries)
+        {
+            List<KeyValuePair<DateTime,double>> historicalPricesOfCryptoCurrency = await dataFetcherService.FetchPriceOfLast180Days(walletEntry.Name);
+        
             historicalPricesOfCryptoCurrency = historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList();
 
-            historicalPricesOfCryptoCurrency = FinanceCalculations.CalculatePortfolioValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
+            historicalPricesOfCryptoCurrency = HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
 
             // now add values to priceList
-                if (priceList.Count == 0)
-                {
+            if (priceList.Count == 0)
+            {
                 priceList = historicalPricesOfCryptoCurrency;
             }
-                else
-                {
+            else
+            {
                 for (int j = 0; j < priceList.Count; j++)
-                    {
-                    priceList[j] = new KeyValuePair<DateTime, decimal>(priceList[j].Key, priceList[j].Value + historicalPricesOfCryptoCurrency[j].Value);
+                {
+                    priceList[j] = new KeyValuePair<DateTime, double>(priceList[j].Key, priceList[j].Value + historicalPricesOfCryptoCurrency[j].Value);
+                }
             }
         }
-
-        }
-        */
-
 
 
 
@@ -320,13 +259,13 @@
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
             .Build();
 
-        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (name, price) =>
+        hubConnection.On<string, double?>("ReceivePriceUpdate", async (name, price) =>
         {
             var existingEntry = walletEntries.FirstOrDefault(entry => entry.Name == name);
             if (existingEntry != null)
             {
                 existingEntry.CurrentPrice = price; // Aktualisiere den Preis des vorhandenen Eintrags
-                decimal allValue = walletEntries.Sum(entry => entry.Amount.GetValueOrDefault() * entry.CurrentPrice.GetValueOrDefault());
+                double allValue = walletEntries.Sum(entry => entry.Amount.GetValueOrDefault() * entry.CurrentPrice.GetValueOrDefault());
                 await priceChart.UpdateChart(DateTime.Now, allValue);
             }
             InvokeAsync(StateHasChanged);

@@ -14,19 +14,19 @@
 
 @code {
     [Parameter] public string Name { get; set; }
-    public decimal Price { get; set; }
+    public double Price { get; set; }
     PriceChart priceChart;
     private HubConnection hubConnection;
 
-    public List<KeyValuePair<DateTime, decimal>> priceList { get; set; } = new List<KeyValuePair<DateTime, decimal>>
+    public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>
     {
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-30), 48000),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-25), 48500),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-20), 49000),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-15), 49500),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-10), 50000),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-5), 50500),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now, 51000),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-30), 48000),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-25), 48500),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-20), 49000),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-15), 49500),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-10), 50000),
+        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-5), 50500),
+        new KeyValuePair<DateTime, double>(DateTime.Now, 51000),
     };
 
 
@@ -39,12 +39,12 @@
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
         .Build();
 
-        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (name, price) =>
+        hubConnection.On<string, double>("ReceivePriceUpdate", async (name, price) =>
             {
                 if (name == Name)
                 {
-                    await priceChart.UpdateChart(DateTime.Now, (decimal)price);
-                    Price = (decimal)price;
+                    await priceChart.UpdateChart(DateTime.Now, price);
+                    Price = price;
                     InvokeAsync(StateHasChanged);
                 }
             });
