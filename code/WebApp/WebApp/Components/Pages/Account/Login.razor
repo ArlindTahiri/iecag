@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using WebApp.Models.ViewModels
+@inject UserService UserService
 @inject NavigationManager navigationManager
 
 <PageTitle>IeCAG - Login</PageTitle>
@@ -49,8 +50,8 @@
 
     private async Task Authenticate()
     {
-        var userAccount = new LoginViewModel{UserName="username", Password="arlind"}; //get database userAccount
-        if(userAccount is null || userAccount.Password != Model.Password)
+        var userExists = await UserService.ValidateUserAsync(Model.UserName, Model.Password);
+        if (!userExists)
         {
             errorMessage = "Invalid User Name or Password";
             return;
@@ -59,7 +60,7 @@
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, Model.UserName),
-            new Claim(ClaimTypes.Role, "Administrator")
+            new Claim(ClaimTypes.Role, "User")
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

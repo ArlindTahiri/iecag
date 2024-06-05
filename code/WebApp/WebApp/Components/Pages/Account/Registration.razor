@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using WebApp.Models.ViewModels
+@inject UserService UserService
 @inject NavigationManager navigationManager
 
 <PageTitle>IeCAG - Registration</PageTitle>
@@ -49,26 +50,39 @@
 
     private string? errorMessage;
 
+    private bool success;
+
     private async Task RegisterUser()
     {
-        // Hier könntest du die Logik für die Registrierung implementieren,
-        // z.B. Überprüfung, ob der Benutzername bereits vorhanden ist, usw.
-        // Für dieses Beispiel fügen wir einfach einen neuen Benutzer hinzu.
-
-        // Check if password matches confirm password
         if (Model.Password != Model.ConfirmPassword)
         {
             errorMessage = "Passwords do not match";
             return;
         }
 
-        // For simplicity, let's assume registration is successful
-        // Create a new user
-        var newUser = new LoginViewModel { UserName = Model.UserName, Password = Model.Password };
+        try
+        {
+            // Prüfen, ob der Benutzername bereits existiert
+            bool userExists = await UserService.UserExistsAsync(Model.UserName);
+            if (userExists)
+            {
+                errorMessage = "Username already taken";
+                return;
+            }
 
-        // You may need to add more validation logic here, e.g. check if username is already taken
-
-        // For demonstration, let's just assume registration is successful and navigate to login page
-        navigationManager.NavigateTo("/login");
+            // Benutzer erstellen
+            await UserService.CreateUserAsync(Model.UserName, Model.Password);
+            success = true;
+        }
+        catch (Exception ex)
+        {
+            // Fehlerbehandlung
+            errorMessage = $"Registration failed: {ex.Message}";
+        }
+        if (success)
+        {
+            navigationManager.NavigateTo("login");
+        }
+        
     }
 }

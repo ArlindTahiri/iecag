@@ -1,9 +1,12 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Azure.Data.Tables;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
 using System;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using WebApp.Models.Entities;
 
 namespace WebApp.Services
 {
@@ -26,11 +29,29 @@ namespace WebApp.Services
             lock (_lock)
             {
                 // Code to fetch data from backend
+                //FetchCurrentPricesFromAzureTable();
+                /*
                 FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/crypto-com-chain", "Cronos");
                 FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/bitcoin", "Bitcoin");
                 FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/ethereum", "Ethereum");
+                */
             }
         }
+
+        /*
+        public async Task FetchCurrentPricesFromAzureTable()
+        {
+            // Verbindung zu Azure Table Storage herstellen
+            var serviceClient = new TableServiceClient(new Uri(_options.TableEndpoint), new TableSharedKeyCredential(_options.AccountName, _options.AccountKey));
+            var tableClient = serviceClient.GetTableClient("currentprices");
+
+            // Lade alle Einträge aus der Tabelle
+            await foreach (var entity in tableClient.QueryAsync<TableEntity>())
+            {
+                await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", entity.PartitionKey, Convert.ToDecimal(entity["price"]));
+            }
+        }
+        */
 
         public async Task FetchPriceFromBackend(string url, string name)
         {

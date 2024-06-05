@@ -1,6 +1,6 @@
 ﻿using WebApp.Models.Entities;
 
-namespace WebApp
+namespace WebApp.HelperClasses
 {
     public static class FinanceCalculations
     {
