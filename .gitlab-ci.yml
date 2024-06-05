@@ -92,8 +92,7 @@ azure_create_datatable:
     - azure_create_resource_group
   script:
     - az storage account create -n $STORAGE_ACCOUNT -g $RESOURCE_GROUP -l westus --subscription $SUBSCRIPTION_ID || exit 0
-    - az cosmosdb create --name $COSMOSDB_DATA_ACCOUNT --capabilities EnableTable --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTION_ID || exit 0
-    - az cosmosdb table create --name $TABLE_CURRENT_PRICE --resource-group $RESOURCE_GROUP --account-name $COSMOSDB_DATA_ACCOUNT || exit 0
-    - az cosmosdb table create --name $TABLE_PRICE_HISTORY --resource-group $RESOURCE_GROUP --account-name $COSMOSDB_DATA_ACCOUNT || exit 0
+    - az storage table create --name $TABLE_CURRENT_PRICE --account-name $STORAGE_ACCOUNT || exit 0
+    - az storage table create --name $TABLE_PRICE_HISTORY --account-name $STORAGE_ACCOUNT || exit 0
   rules:
     - if: '$DEPLOY == "true"'
