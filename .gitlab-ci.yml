@@ -16,10 +16,10 @@ variables:
     value: "iecagcosmos"
   TABLE_CURRENT_PRICE:
     description: "current price table name"
-    value: "current_prices"
+    value: "currentprices"
   TABLE_PRICE_HISTORY:
     description: "price history table name"
-    value: "price_history"
+    value: "pricehistory"
 
 stages:
   - azure_setup
