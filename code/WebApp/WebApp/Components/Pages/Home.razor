@@ -5,8 +5,6 @@
 @using WebApp.Components.SubComponents;
 @implements IAsyncDisposable
 @using Microsoft.Extensions.Options;
-@inject IOptions<AzureTableStorageOptions> AzureTableStorageOptions;
-@using Azure.Data.Tables;
 
 
 <PageTitle>IeCAG - Cryptocurrencies</PageTitle>
@@ -45,7 +43,7 @@
 
         // Verbindung zu Azure Table Storage herstellen
         var serviceClient = new TableServiceClient(new Uri(options.TableEndpoint), new TableSharedKeyCredential(options.AccountName, options.AccountKey));
-        var tableClient = serviceClient.GetTableClient("currentprice");
+        var tableClient = serviceClient.GetTableClient("currentprices");
 
         // Lade alle Einträge aus der Tabelle
         await foreach (var entity in tableClient.QueryAsync<TableEntity>())
@@ -57,6 +55,7 @@
                 });
         }
         */
+        
 
 
 

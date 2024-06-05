@@ -3,6 +3,7 @@ using WebApp.Services;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using WebApp.Models.Entities;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,7 +25,11 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSingleton<DataFetcherService>();
 builder.Services.AddHttpClient();
 
-builder.Services.Configure<AzureTableStorageOptions>(builder.Configuration.GetSection("AzureTableStorage"));
+builder.Services.AddSingleton<UserService>(sp =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
+    return new UserService(connectionString);
+});
 
 builder.Services.AddResponseCompression(opts =>
 {
