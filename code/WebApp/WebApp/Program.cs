@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using WebApp.Models.Entities;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,7 +23,14 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 builder.Services.AddAuthorization();
 builder.Services.AddCascadingAuthenticationState();
 
-builder.Services.AddSingleton<DataFetcherService>();
+builder.Services.AddSingleton<DataFetcherService>(sp =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
+    var httpClient = sp.GetRequiredService<HttpClient>();
+    var hubContext = sp.GetRequiredService<IHubContext<PricesHub>>();
+    return new DataFetcherService(httpClient, hubContext, connectionString);
+});
+
 builder.Services.AddHttpClient();
 
 builder.Services.AddSingleton<UserService>(sp =>
