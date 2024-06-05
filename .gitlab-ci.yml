@@ -4,7 +4,7 @@ variables:
     value: "IeCAG-INFCA"
   DEPLOY:
     description: "Deploying the infrastructure"
-    value: "true"
+    value: "false"
   NUKE:
     description: "Nuke the resource group"
     value: "false"
