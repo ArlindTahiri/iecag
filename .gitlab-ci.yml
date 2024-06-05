@@ -7,7 +7,7 @@ variables:
     value: "true"
   NUKE:
     description: "Nuke the resource group"
-    value: "true"
+    value: "false"
   STORAGE_ACCOUNT:
     description: "the storage account name"
     value: "iecagstorage"
