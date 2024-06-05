@@ -5,6 +5,7 @@
 @using WebApp.Components.SubComponents;
 @implements IAsyncDisposable
 @using Microsoft.Extensions.Options;
+@inject DataFetcherService dataFetcherService;
 
 
 <PageTitle>IeCAG - Cryptocurrencies</PageTitle>
@@ -21,9 +22,9 @@
     <tbody>
         @foreach (var priceEntry in priceEntries)
         {
-            <tr @onclick="(() => RedirectToCryptocurrency(priceEntry.Name))" style="cursor: pointer;" title="Klicken, um Details von @priceEntry.Name anzuzeigen">
-                <td>@priceEntry.Name</td>
-                <td>@priceEntry.Price</td>
+            <tr @onclick="(() => RedirectToCryptocurrency(priceEntry.PartitionKey))" style="cursor: pointer;" title="Klicken, um Details von @priceEntry.PartitionKey anzuzeigen">
+                <td>@priceEntry.PartitionKey</td>
+                <td>@priceEntry.price</td>
             </tr>
         }
     </tbody>
@@ -32,29 +33,14 @@
 @code {
     PriceChart priceChart;
 
-    private List<PriceEntry> priceEntries = new List<PriceEntry>();
+    private List<CoinPrice> priceEntries = new List<CoinPrice>();
     private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
-        /*
-        //Get all the prices from the Azure Table
-        var options = AzureTableStorageOptions.Value;
 
-        // Verbindung zu Azure Table Storage herstellen
-        var serviceClient = new TableServiceClient(new Uri(options.TableEndpoint), new TableSharedKeyCredential(options.AccountName, options.AccountKey));
-        var tableClient = serviceClient.GetTableClient("currentprices");
-
-        // Lade alle Einträge aus der Tabelle
-        await foreach (var entity in tableClient.QueryAsync<TableEntity>())
-        {
-            priceEntries.Add(new PriceEntry
-                {
-                    Name = entity.PartitionKey,
-                    Price = Convert.ToDecimal(entity["Price"])
-                });
-        }
-        */
+        priceEntries = await dataFetcherService.FetchAllCurrentPrices();
+        
         
 
 
@@ -64,12 +50,12 @@
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
             .Build();
 
-        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (name, price) =>
+        hubConnection.On<string, double>("ReceivePriceUpdate", async (name, price) =>
         {
-            var existingEntry = priceEntries.FirstOrDefault(entry => entry.Name == name);
+            var existingEntry = priceEntries.FirstOrDefault(entry => entry.PartitionKey == name);
             if (existingEntry != null)
             {
-                existingEntry.Price = price; // Aktualisiere den Preis des vorhandenen Eintrags
+                existingEntry.price = price; // Aktualisiere den Preis des vorhandenen Eintrags
                 if (name.Equals("Bitcoin"))
                 {
                     //await priceChart.UpdateChart(DateTime.Now, (decimal)price);
@@ -77,7 +63,7 @@
             }
             else
             {
-                priceEntries.Add(new PriceEntry { Name = name, Price = price }); // Füge einen neuen Eintrag hinzu, wenn das Name noch nicht vorhanden ist
+                priceEntries.Add(new CoinPrice { PartitionKey = name, price = price }); // Füge einen neuen Eintrag hinzu, wenn das Name noch nicht vorhanden ist
             }
             InvokeAsync(StateHasChanged);
         });

@@ -17,8 +17,24 @@ namespace WebApp.Services
         private readonly object _lock = new object();
         private readonly IHubContext<PricesHub> _hubContext;
 
-        public DataFetcherService(HttpClient httpClient, IHubContext<PricesHub> hubContext)
+        private readonly TableClient _tableClientCurrentPrices;
+        private readonly TableClient _tableClientPriceHistory7Days;
+        private readonly TableClient _tableClientPriceHistory30Days;
+        private readonly TableClient _tableClientPriceHistory180Days;
+
+
+        public DataFetcherService(HttpClient httpClient, IHubContext<PricesHub> hubContext, string connectionString)
         {
+            var serviceClient = new TableServiceClient(connectionString);
+            _tableClientCurrentPrices = serviceClient.GetTableClient("currentprices");
+            _tableClientCurrentPrices.CreateIfNotExists();
+            _tableClientPriceHistory7Days = serviceClient.GetTableClient("pricehistory7days");
+            _tableClientPriceHistory7Days.CreateIfNotExists();
+            _tableClientPriceHistory30Days = serviceClient.GetTableClient("pricehistory30days");
+            _tableClientPriceHistory30Days.CreateIfNotExists();
+            _tableClientPriceHistory180Days = serviceClient.GetTableClient("pricehistory180days");
+            _tableClientPriceHistory180Days.CreateIfNotExists();
+            
             _httpClient = httpClient;
             _hubContext = hubContext;
             _timer = new Timer(TimerCallback, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
@@ -29,7 +45,7 @@ namespace WebApp.Services
             lock (_lock)
             {
                 // Code to fetch data from backend
-                //FetchCurrentPricesFromAzureTable();
+                FetchCurrentPricesFromAzureTable();
                 /*
                 FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/crypto-com-chain", "Cronos");
                 FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/bitcoin", "Bitcoin");
@@ -38,20 +54,58 @@ namespace WebApp.Services
             }
         }
 
-        /*
+        
         public async Task FetchCurrentPricesFromAzureTable()
         {
-            // Verbindung zu Azure Table Storage herstellen
-            var serviceClient = new TableServiceClient(new Uri(_options.TableEndpoint), new TableSharedKeyCredential(_options.AccountName, _options.AccountKey));
-            var tableClient = serviceClient.GetTableClient("currentprices");
-
             // Lade alle Einträge aus der Tabelle
-            await foreach (var entity in tableClient.QueryAsync<TableEntity>())
+            await foreach (var entity in _tableClientCurrentPrices.QueryAsync<TableEntity>())
             {
-                await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", entity.PartitionKey, Convert.ToDecimal(entity["price"]));
+                await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", entity.PartitionKey, entity["price"]);
             }
         }
-        */
+
+
+        public async Task<List<CoinPrice>> FetchAllCurrentPrices()
+        {
+           List<CoinPrice> coinPrices = new List<CoinPrice>();
+            await foreach (var entity in _tableClientCurrentPrices.QueryAsync<CoinPrice>())
+            {
+                coinPrices.Add(entity);
+            }
+            return coinPrices;
+        }
+        
+        public async Task<decimal> FetchCurrentPrice(string coin)
+        {
+            var entity = await _tableClientCurrentPrices.GetEntityAsync<CoinPrice>(coin, "");
+            if (entity.HasValue)
+            {
+                var coinPrice = entity.Value;
+                return Convert.ToDecimal(coinPrice.price);
+            }
+            else
+            {
+                return 0;
+            }
+            
+        }
+        
+
+        public async Task FetchPriceOfLast180Days(string coin)
+        {
+
+        }
+
+        public async Task FetchPriceOfLast30Days(string coin)
+        {
+
+        }
+
+        public async Task FetchPriceOfLast7Days(string coin)
+        {
+
+        }
+        
 
         public async Task FetchPriceFromBackend(string url, string name)
         {

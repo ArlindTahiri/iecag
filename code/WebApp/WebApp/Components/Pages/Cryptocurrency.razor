@@ -4,6 +4,7 @@
 @using WebApp.Components.SubComponents;
 @rendermode InteractiveServer
 @implements IAsyncDisposable
+@inject DataFetcherService dataFetcherService
 
 <PageTitle>IeCAG - @Name</PageTitle>
 
@@ -31,6 +32,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Price = await dataFetcherService.FetchCurrentPrice(Name);
+        StateHasChanged();
+
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
         .Build();
