@@ -41,6 +41,7 @@ tilly_nuke:
     - if [ $NUKE == "true" ]; then az group delete --yes --name $RESOURCE_GROUP; fi || exit 0
   rules:
     - if: '$DEPLOY == "true"'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 terraform:
   stage: deploy
@@ -84,6 +85,7 @@ azure_create_resource_group:
     - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
   rules:
     - if: '$DEPLOY == "true"'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 azure_create_datatable:
   stage: azure_setup
@@ -98,3 +100,4 @@ azure_create_datatable:
     - az storage table create --name $TABLE_PRICE_HISTORY --account-name $STORAGE_ACCOUNT || exit 0
   rules:
     - if: '$DEPLOY == "true"'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
