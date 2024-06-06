@@ -26,9 +26,9 @@ namespace WebApp.Services
                 coin = coin,
                 amount = amount,
                 pricePaidAll = pricePaidAll,
-                TransactionDate = transactionDate.DateTime,
+                TransactionDate = transactionDate,
                 TransactionType = TransactionType,
-                Timestamp = transactionDate.DateTime,
+                Timestamp = DateTimeOffset.UtcNow,
                 ETag = ETag.All
             };
 

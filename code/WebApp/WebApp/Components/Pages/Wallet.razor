@@ -13,6 +13,7 @@
 @inject TransactionService transactionService;
 @inject DataFetcherService dataFetcherService;
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@using WebApp.Models.ViewModels;
 
 
 <PageTitle>IeCAG - Wallet</PageTitle>
@@ -38,6 +39,7 @@
                 <h1 class="modal-title fs-5" id="transactionModalLabel">Add Transaction</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <EditForm Model="@transaction" OnValidSubmit="AddTransaction" FormName="AddTransaction">
             <div class="modal-body">
                 <ul class="nav nav-pills nav-fill">
                     <li class="nav-item">
@@ -47,39 +49,47 @@
                         <button class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick="(() => selectTransactionType(sellString))">Sell</button>
                     </li>
                 </ul>
-                <div class="form-group mt-4">
-                    <label for="selectCryptocurrency">Select Cryptocurrency</label>
-                    <select class="form-select mt-1" @bind="selectedCryptocurrency">
-                        <option value="" disabled selected>Select a cryptocurrency</option>
-                        @foreach (var crypto in cryptocurrencies)
-                        {
-                            <option value="@crypto">@crypto</option>
-                        }
-                    </select>
-                </div>
-                <div class="form-group mt-3">
-                    <label for="amount">Amount</label>
-                    <input type="number" class="form-control mt-1" id="amount" @bind="amount" oninput="calculatePricePaidAllOrAveragePrice()">
-                </div>
-                <div class="form-group mt-3 row">
-                    <div class="col">
-                        <label for="averagePrice">Average Price</label>
-                        <input type="number" class="form-control mt-1" id="averagePrice" @bind="averagePrice" oninput="calculatePricePaidAll()">
+                
+                    <DataAnnotationsValidator />
+                    
+                    <div class="mt-4">
+                        <label>Select Cryptocurrency</label>
+                        <InputSelect @bind-Value="transaction.SelectedCryptocurrency" class="form-select mt-1" id="selectCryptocurrency">
+                            <option value="" disabled selected>Select a cryptocurrency</option>
+                            @foreach (var crypto in cryptocurrencies)
+                            {
+                                <option value="@crypto">@crypto</option>
+                            }
+                        </InputSelect>
                     </div>
-                    <div class="col">
-                        <label for="pricePaidAll">Price Paid All</label>
-                        <input type="number" class="form-control mt-1" id="pricePaidAll" @bind="pricePaidAll" oninput="calculateAveragePrice()">
+                    
+                    <div class="mt-3">
+                        <label>Amount</label>
+                        <InputNumber @bind-Value="transaction.Amount" class="form-control mt-1" id="amount" oninput="calculatePricePaidAllOrAveragePrice()" />
                     </div>
-                </div>
-                <div class="form-group mt-3">
-                    <label for="transactionDate">Transaction Date</label>
-                    <input type="datetime-local" class="form-control mt-1" id="transactionDate" @bind="transactionDate">
-                </div>
+
+                    <div class="mt-3 row">
+                        <div class="col">
+                            <label>Average Price</label>
+                            <InputNumber @bind-Value="transaction.AveragePrice" class="form-control mt-1" id="averagePrice" oninput="calculatePricePaidAll()" />
+                        </div>
+
+                        <div class="col">
+                            <label>Price Paid All</label>
+                            <InputNumber @bind-Value="transaction.PricePaidAll" class="form-control mt-1" id="pricePaidAll" oninput="calculateAveragePrice()" />
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label>Transaction Date</label>
+                        <InputDate @bind-Value="transaction.TransactionDate" class="form-control mt-1" id="transactionDate" />
+                    </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @onclick="AddTransaction">Save changes</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Save changes</button>
             </div>
+            </EditForm>
         </div>
     </div>
 </div>
@@ -144,9 +154,7 @@
         @foreach (var walletEntry in walletEntries)
         {
             var averagePrice = walletEntry.AveragePrice;
-            var priceChange = walletEntry.CurrentPrice.HasValue && averagePrice.HasValue
-            ? Math.Round(((walletEntry.CurrentPrice.Value - averagePrice.Value) / averagePrice.Value) * 100, 2)
-            : (double?)null;
+            var priceChange = Math.Round(((walletEntry.CurrentPrice - averagePrice) / averagePrice) * 100, 2);
             <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Name anzuzeigen">
                 <td>@walletEntry.Name</td>
                 <td>@walletEntry.CurrentPrice</td>
@@ -165,11 +173,15 @@
     PriceChart priceChart;
 
     private string selectedCryptocurrency;
-    private decimal amount;
-    private decimal? averagePrice;
-    private decimal? pricePaidAll;
+    private double amount;
+    private double averagePrice;
+    private double pricePaidAll;
     private string transactionType = "Buy";
     private DateTime transactionDate = DateTime.Now;
+    private string username;
+
+    [SupplyParameterFromForm]
+    public TransactionModel transaction { get; set; } = new();
 
     private void selectTransactionType(string type)
     {
@@ -179,22 +191,10 @@
     private List<string> cryptocurrencies = new List<string> { "Bitcoin", "Ethereum", "Cronos" }; // Beispielhafte Liste
 
 
-    public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>
-    {
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-30), 34200),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-25), 34800),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-20), 37400),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-15), 36000),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-10), 36600),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-5), 37200),
-        new KeyValuePair<DateTime, double>(DateTime.Now, 37000),
-    };
+    public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>();
 
     private List<WalletEntry> walletEntries = new List<WalletEntry>
     {
-        new WalletEntry { Name = "Bitcoin", Amount = 0.5, AveragePrice = 45000, CurrentPrice = 48000 },
-        new WalletEntry { Name = "Ethereum", Amount = 2, AveragePrice = 3000, CurrentPrice = 3200 },
-        new WalletEntry { Name = "Cronos", Amount = 1000, AveragePrice = 0.2, CurrentPrice = 0.25 }
     };
 
 
@@ -205,13 +205,17 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var userName = user.Identity?.Name;
-        
+        username = user.Identity?.Name;
 
-        List<Transaction> allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(userName);
+
+        List<Transaction> allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
 
         // Erstelle Empty WalletEntries nur mit dem Namen
-        walletEntries = allTransactionsOfUser.Select(transaction => new WalletEntry { Name = transaction.coin }).Distinct().ToList();
+        walletEntries = allTransactionsOfUser
+            .Select(transaction => transaction.coin)
+            .Distinct()
+            .Select(name => new WalletEntry { Name = name })
+            .ToList();
 
 
         // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
@@ -235,7 +239,7 @@
         foreach (var walletEntry in walletEntries)
         {
             List<KeyValuePair<DateTime,double>> historicalPricesOfCryptoCurrency = await dataFetcherService.FetchPriceOfLast180Days(walletEntry.Name);
-        
+
             historicalPricesOfCryptoCurrency = historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList();
 
             historicalPricesOfCryptoCurrency = HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
@@ -254,19 +258,30 @@
             }
         }
 
+        List<CoinPrice> coinPrices = await dataFetcherService.FetchAllCurrentPrices();
+
+        foreach(var walletEntry in walletEntries)
+        {
+            var coinPrice = coinPrices.FirstOrDefault(cp => cp.PartitionKey == walletEntry.Name);
+            if (coinPrice != null)
+            {
+                walletEntry.CurrentPrice = coinPrice.price;
+            }
+        }
+
 
 
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
             .Build();
 
-        hubConnection.On<string, double?>("ReceivePriceUpdate", async (name, price) =>
+        hubConnection.On<string, double>("ReceivePriceUpdate", async (name, price) =>
         {
             var existingEntry = walletEntries.FirstOrDefault(entry => entry.Name == name);
             if (existingEntry != null)
             {
                 existingEntry.CurrentPrice = price; // Aktualisiere den Preis des vorhandenen Eintrags
-                double allValue = walletEntries.Sum(entry => entry.Amount.GetValueOrDefault() * entry.CurrentPrice.GetValueOrDefault());
+                double allValue = walletEntries.Sum(entry => entry.Amount * entry.CurrentPrice);
                 await priceChart.UpdateChart(DateTime.Now, allValue);
             }
             InvokeAsync(StateHasChanged);
@@ -294,8 +309,40 @@
 
     private async Task AddTransaction()
     {
-        
+        await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, transaction.TransactionDate, transactionType);
+        var walletEntry = walletEntries.FirstOrDefault(sp => sp.Name == transaction.SelectedCryptocurrency);
 
+        if (walletEntry != null)
+        {
+            if (transactionType == buyString)
+            {
+                // Berechne den neuen durchschnittlichen Kaufpreis
+                var totalCost = (walletEntry.Amount * walletEntry.AveragePrice) + (transaction.Amount * transaction.AveragePrice);
+                walletEntry.Amount += transaction.Amount;
+                walletEntry.AveragePrice = totalCost / walletEntry.Amount;
+            }
+            else if (transactionType == sellString)
+            {
+                walletEntry.Amount -= transaction.Amount;
+                if (walletEntry.Amount < 0)
+                {
+                    walletEntry.Amount = 0;
+                }
+            }
+        }
+        else if (transactionType == buyString) // Neuen Eintrag nur bei Kauf hinzufügen
+        {
+            walletEntries.Add(new WalletEntry
+                {
+                    Name = transaction.SelectedCryptocurrency,
+                    Amount = transaction.Amount,
+                    AveragePrice = transaction.AveragePrice,
+                    CurrentPrice = transaction.AveragePrice // Oder den aktuellen Preis setzen, wenn verfügbar
+                });
+        }
+
+        // Aktualisieren der Ansicht
+        StateHasChanged();
     }
 
 }

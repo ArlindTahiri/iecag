@@ -10,7 +10,7 @@ namespace WebApp.Models.Entities
         public string coin { get; set; }
         public double amount { get; set; }
         public double pricePaidAll { get; set; }
-        public DateTime TransactionDate { get; set; }
+        public DateTimeOffset TransactionDate { get; set; }
         public string TransactionType { get; set; } // "Buy" or "Sell"
 
         // ITableEntity membersW

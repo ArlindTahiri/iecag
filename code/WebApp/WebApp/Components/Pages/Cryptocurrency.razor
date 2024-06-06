@@ -18,22 +18,13 @@
     PriceChart priceChart;
     private HubConnection hubConnection;
 
-    public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>
-    {
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-30), 48000),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-25), 48500),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-20), 49000),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-15), 49500),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-10), 50000),
-        new KeyValuePair<DateTime, double>(DateTime.Now.AddMinutes(-5), 50500),
-        new KeyValuePair<DateTime, double>(DateTime.Now, 51000),
-    };
+    public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>();
 
 
     protected override async Task OnInitializedAsync()
     {
         Price = await dataFetcherService.FetchCurrentPrice(Name);
-        StateHasChanged();
+        priceList = await dataFetcherService.FetchPriceOfLast7Days(Name);
 
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
