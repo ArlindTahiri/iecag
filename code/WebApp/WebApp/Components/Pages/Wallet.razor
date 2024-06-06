@@ -12,6 +12,7 @@
 @using Microsoft.Extensions.Options;
 @inject TransactionService transactionService;
 @inject DataFetcherService dataFetcherService;
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 
 <PageTitle>IeCAG - Wallet</PageTitle>
@@ -199,12 +200,12 @@
 
     private HubConnection? hubConnection;
 
-    [CascadingParameter]
-    public HttpContext? HttpContext { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        var userName = HttpContext.User.Identity.Name;
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userName = user.Identity?.Name;
         
 
         List<Transaction> allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(userName);
