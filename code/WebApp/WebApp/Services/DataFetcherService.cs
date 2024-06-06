@@ -101,14 +101,24 @@ namespace WebApp.Services
             return prices;
         }
 
-        public async Task FetchPriceOfLast30Days(string coin)
+        public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast30Days(string coin)
         {
-
+            List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
+            await foreach (var entity in _tableClientPriceHistory30Days.QueryAsync<CoinPrice>($"coin eq '{coin}'"))
+            {
+                prices.Add(new KeyValuePair<DateTime, double>(entity.Timestamp.Value.DateTime, entity.price));
+            }
+            return prices;
         }
 
-        public async Task FetchPriceOfLast7Days(string coin)
+        public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast7Days(string coin)
         {
-
+            List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
+            await foreach (var entity in _tableClientPriceHistory7Days.QueryAsync<CoinPrice>($"coin eq '{coin}'"))
+            {
+                prices.Add(new KeyValuePair<DateTime, double>(entity.Timestamp.Value.DateTime, entity.price));
+            }
+            return prices;
         }
         
 
