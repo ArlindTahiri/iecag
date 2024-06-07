@@ -106,6 +106,8 @@
             if (!isNaN(averagePrice) && !isNaN(amount)) {
                 var pricePaidAll = averagePrice * amount;
                 document.getElementById("pricePaidAll").value = pricePaidAll.toFixed(2);
+                var event = new Event("change");
+                document.getElementById("pricePaidAll").dispatchEvent(event);
             }
         }
         else {
@@ -114,6 +116,8 @@
             if (!isNaN(pricePaidAll) && !isNaN(amount)) {
                 var averagePrice = pricePaidAll / amount;
                 document.getElementById("averagePrice").value = averagePrice.toFixed(2);
+                var event = new Event("change");
+                document.getElementById("averagePrice").dispatchEvent(event);
             }
         }
     }
@@ -125,6 +129,8 @@
         if (!isNaN(averagePrice) && !isNaN(amount)) {
             var pricePaidAll = averagePrice * amount;
             document.getElementById("pricePaidAll").value = pricePaidAll.toFixed(2);
+            var event = new Event("change");
+            document.getElementById("pricePaidAll").dispatchEvent(event);
         }
         
     }
@@ -136,6 +142,8 @@
         if (!isNaN(pricePaidAll) && !isNaN(amount)) {
             var averagePrice = pricePaidAll / amount;
             document.getElementById("averagePrice").value = averagePrice.toFixed(2);
+            var event = new Event("change");
+            document.getElementById("averagePrice").dispatchEvent(event);
         }
     }
 </script>
@@ -331,6 +339,8 @@
                     CurrentPrice = transaction.AveragePrice // Oder den aktuellen Preis setzen, wenn verfügbar
                 });
         }
+
+        transaction = new TransactionModel();
 
         // Aktualisieren der Ansicht
         StateHasChanged();
