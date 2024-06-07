@@ -186,7 +186,7 @@
                 <td>@averagePrice</td>
                 <td>@priceChange %</td>
                 <td>@walletEntry.Amount</td>
-                <td>@(walletEntry.Amount * walletEntry.CurrentPrice)</td>
+                <td>@Math.Round(walletEntry.Amount * walletEntry.CurrentPrice, 2)</td>
             </tr>
         }
     </tbody>
