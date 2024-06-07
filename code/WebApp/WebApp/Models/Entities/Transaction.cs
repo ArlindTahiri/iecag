@@ -12,8 +12,6 @@ namespace WebApp.Models.Entities
         public double pricePaidAll { get; set; }
         public DateTimeOffset TransactionDate { get; set; }
         public string TransactionType { get; set; } // "Buy" or "Sell"
-
-        // ITableEntity membersW
         public DateTimeOffset? Timestamp { get; set; }
         public ETag ETag { get; set; }
     }

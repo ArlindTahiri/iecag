@@ -40,17 +40,18 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <EditForm Model="@transaction" OnValidSubmit="AddTransaction" FormName="AddTransaction">
-            <div class="modal-body">
-                <ul class="nav nav-pills nav-fill">
-                    <li class="nav-item">
-                        <button class="nav-link @(transactionType == "Buy" ? "active" : "")" aria-current="page" @onclick="(() => selectTransactionType(buyString))">Buy</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick="(() => selectTransactionType(sellString))">Sell</button>
-                    </li>
-                </ul>
+                <DataAnnotationsValidator />
+                <div class="modal-body">
+                    <ul class="nav nav-pills nav-fill">
+                        <li class="nav-item">
+                            <button class="nav-link @(transactionType == "Buy" ? "active" : "")" aria-current="page" @onclick='(() => selectTransactionType("Buy"))'>Buy</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick='(() => selectTransactionType("Sell"))'>Sell</button>
+                        </li>
+                    </ul>
                 
-                    <DataAnnotationsValidator />
+                    
                     
                     <div class="mt-4">
                         <label>Select Cryptocurrency</label>
@@ -168,16 +169,8 @@
 </table>
 
 @code {
-    private string buyString = "Buy";
-    private string sellString = "Sell";
     PriceChart priceChart;
-
-    private string selectedCryptocurrency;
-    private double amount;
-    private double averagePrice;
-    private double pricePaidAll;
     private string transactionType = "Buy";
-    private DateTime transactionDate = DateTime.Now;
     private string username;
 
     [SupplyParameterFromForm]
@@ -193,9 +186,7 @@
 
     public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>();
 
-    private List<WalletEntry> walletEntries = new List<WalletEntry>
-    {
-    };
+    private List<WalletEntry> walletEntries = new List<WalletEntry>();
 
 
     private HubConnection? hubConnection;
@@ -314,14 +305,14 @@
 
         if (walletEntry != null)
         {
-            if (transactionType == buyString)
+            if (transactionType == "Buy")
             {
                 // Berechne den neuen durchschnittlichen Kaufpreis
                 var totalCost = (walletEntry.Amount * walletEntry.AveragePrice) + (transaction.Amount * transaction.AveragePrice);
                 walletEntry.Amount += transaction.Amount;
                 walletEntry.AveragePrice = totalCost / walletEntry.Amount;
             }
-            else if (transactionType == sellString)
+            else if (transactionType == "Sell")
             {
                 walletEntry.Amount -= transaction.Amount;
                 if (walletEntry.Amount < 0)
@@ -330,7 +321,7 @@
                 }
             }
         }
-        else if (transactionType == buyString) // Neuen Eintrag nur bei Kauf hinzufügen
+        else if (transactionType == "Buy") // Neuen Eintrag nur bei Kauf hinzufügen
         {
             walletEntries.Add(new WalletEntry
                 {
