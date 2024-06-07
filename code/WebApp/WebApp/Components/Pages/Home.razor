@@ -2,7 +2,6 @@
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation;
-@using WebApp.Components.SubComponents;
 @implements IAsyncDisposable
 @using Microsoft.Extensions.Options;
 @inject DataFetcherService dataFetcherService;
@@ -11,6 +10,7 @@
 <PageTitle>IeCAG - Cryptocurrencies</PageTitle>
 
 <h1>Prices</h1>
+
 
 <table class="table table-hover">
     <thead>

@@ -1,0 +1,117 @@
+﻿@rendermode InteractiveServer
+
+<!-- In deiner Blazor-Komponente -->
+<div class="chart-container" style="position: relative; height:@Height; width:@Width">
+    <canvas id="@Name"></canvas>
+</div>
+    
+
+
+<script>
+    var DoughnutChart;
+    createDoughnutChart = (chartID, labels, data) => {
+        DoughnutChart = new Chart(document.getElementById(chartID), {
+            type: 'doughnut', // Typ auf 'doughnut' geändert
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Values',
+                    data: data,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+            }
+        });
+    };
+
+    updateDoughnutChart = (labels, newData) => {
+        console.log('updateDoughnutChart function is executing.'); // Log für Ausführung der Funktion
+        try {
+            DoughnutChart.data.labels = labels;
+            DoughnutChart.data.datasets.forEach((dataset) => {
+                dataset.data = newData;
+            });
+            DoughnutChart.update();
+        } catch (error) {
+            console.error('An error occurred in updateDoughnutChart function:', error); // Fehlermeldung in der Konsole anzeigen
+        }
+    }
+</script>
+
+
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("createDoughnutChart", Name, DataList.Select(kv => kv.Key.ToString()).ToArray(), DataList.Select(kv => kv.Value).ToArray());
+        }
+    }
+
+    public async Task UpdateChart(string label, double value)
+    {
+        // Füge den neuen Datenpunkt hinzu oder aktualisiere den vorhandenen
+        var existingData = DataList.FirstOrDefault(kv => kv.Key == label);
+        if (!existingData.Equals(default(KeyValuePair<string, double>)))
+        {
+            // Aktualisiere den vorhandenen Datenpunkt
+            DataList.Remove(existingData);
+            DataList.Add(new KeyValuePair<string, double>(label, value));
+        }
+        else
+        {
+            // Füge einen neuen Datenpunkt hinzu
+            DataList.Add(new KeyValuePair<string, double>(label, value));
+        }
+
+        // Erstelle ein neues Diagramm mit den aktualisierten Daten
+        await JSRuntime.InvokeVoidAsync("updateDoughnutChart", DataList.Select(kv => kv.Key).ToArray(), DataList.Select(kv => kv.Value).ToArray());
+    }
+
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; }
+
+    private string _name;
+
+    [Parameter]
+    public string Name
+    {
+        get => _name;
+        set
+        {
+            // Überprüfe, ob der Wert nicht leer ist
+            if (!string.IsNullOrEmpty(value))
+            {
+                // Setze den Wert und füge "doughnutChart[]" hinzu
+                _name = $"doughnutChart{value}";
+            }
+        }
+    }
+
+    [Parameter]
+    public string Width { get; set; } = "50vw";
+
+    [Parameter]
+    public string Height { get; set; } = "50vh";
+
+    [Parameter] public List<KeyValuePair<string, double>> DataList { get; set; }
+}

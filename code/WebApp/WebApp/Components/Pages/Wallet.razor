@@ -7,7 +7,6 @@
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation;
-@using WebApp.Components.SubComponents;
 @implements IAsyncDisposable
 @using Microsoft.Extensions.Options;
 @inject TransactionService transactionService;
@@ -20,7 +19,15 @@
 
 <h3>Wallet</h3>
 
-<PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" />
+<div style="display:flex;">
+    <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" Width="70vw" Height="30vh" />
+
+    <DoughnutChart Name="DoughnutChart" DataList="dataList" @ref="doughnutChart" Width="30vw" Height="30vh" />
+</div>
+
+
+
+
 
 <hr />
 <br />
@@ -164,36 +171,39 @@
 
 </script>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Cryptocurrency</th>
-            <th>Derzeitiger Price</th>
-            <th>Durchschnittkaufpreis</th>
-            <th>% value Change</th>
-            <th>Anzahl von Cryptocurrency</th>
-            <th>Gesamter Wert</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var walletEntry in walletEntries)
-        {
-            var averagePrice = walletEntry.AveragePrice;
-            var priceChange = Math.Round(((walletEntry.CurrentPrice - averagePrice) / averagePrice) * 100, 2);
-            <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Name anzuzeigen">
-                <td>@walletEntry.Name</td>
-                <td>@walletEntry.CurrentPrice</td>
-                <td>@averagePrice</td>
-                <td>@priceChange %</td>
-                <td>@walletEntry.Amount</td>
-                <td>@Math.Round(walletEntry.Amount * walletEntry.CurrentPrice, 2)</td>
+<div style="overflow-x: auto; overflow-y: hidden;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Cryptocurrency</th>
+                <th>Derzeitiger Price</th>
+                <th>Durchschnittkaufpreis</th>
+                <th>% value Change</th>
+                <th>Anzahl von Cryptocurrency</th>
+                <th>Gesamter Wert</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var walletEntry in walletEntries)
+            {
+                var averagePrice = walletEntry.AveragePrice;
+                var priceChange = Math.Round(((walletEntry.CurrentPrice - averagePrice) / averagePrice) * 100, 2);
+                <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Name anzuzeigen">
+                    <td>@walletEntry.Name</td>
+                    <td>@walletEntry.CurrentPrice</td>
+                    <td>@averagePrice</td>
+                    <td>@priceChange %</td>
+                    <td>@walletEntry.Amount</td>
+                    <td>@Math.Round(walletEntry.Amount * walletEntry.CurrentPrice, 2)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 
 @code {
     PriceChart priceChart;
+    DoughnutChart doughnutChart;
     private string transactionType = "Buy";
     private string username;
     private string? errorMessage;
@@ -210,6 +220,8 @@
 
 
     public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>();
+
+    public List<KeyValuePair<string, double>> dataList { get; set; } = new List<KeyValuePair<string, double>>();
 
     private List<WalletEntry> walletEntries = new List<WalletEntry>();
 
@@ -285,6 +297,11 @@
             }
         }
 
+        foreach (var walletEntry in walletEntries)
+        {
+            dataList.Add(new KeyValuePair<string,double>(walletEntry.Name,walletEntry.CurrentPrice * walletEntry.Amount));
+        }
+
 
 
         hubConnection = new HubConnectionBuilder()
@@ -299,6 +316,7 @@
                 existingEntry.CurrentPrice = price; // Aktualisiere den Preis des vorhandenen Eintrags
                 double allValue = walletEntries.Sum(entry => entry.Amount * entry.CurrentPrice);
                 await priceChart.UpdateChart(DateTime.Now, allValue);
+                await doughnutChart.UpdateChart(name, existingEntry.CurrentPrice * existingEntry.Amount);
             }
             InvokeAsync(StateHasChanged);
         });
