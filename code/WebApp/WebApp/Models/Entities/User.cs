@@ -9,8 +9,6 @@ namespace WebApp.Models.Entities
         public string RowKey { get; set; }
         public string PasswordHash { get; set; }
         public string PasswordSalt { get; set; }
-
-        // ITableEntity members
         public DateTimeOffset? Timestamp { get; set; }
         public ETag ETag { get; set; }
     }

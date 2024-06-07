@@ -38,6 +38,11 @@ builder.Services.AddSingleton<UserService>(sp =>
     var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
     return new UserService(connectionString);
 });
+builder.Services.AddSingleton<TransactionService>(sp =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
+    return new TransactionService(connectionString);
+});
 
 builder.Services.AddResponseCompression(opts =>
 {

@@ -75,13 +75,13 @@ namespace WebApp.Services
             return coinPrices;
         }
         
-        public async Task<decimal> FetchCurrentPrice(string coin)
+        public async Task<double> FetchCurrentPrice(string coin)
         {
             var entity = await _tableClientCurrentPrices.GetEntityAsync<CoinPrice>(coin, "");
             if (entity.HasValue)
             {
                 var coinPrice = entity.Value;
-                return Convert.ToDecimal(coinPrice.price);
+                return coinPrice.price;
             }
             else
             {
@@ -91,19 +91,34 @@ namespace WebApp.Services
         }
         
 
-        public async Task FetchPriceOfLast180Days(string coin)
+        public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast180Days(string coin)
         {
-
+            List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
+            await foreach (var entity in _tableClientPriceHistory180Days.QueryAsync<CoinPrice>($"coin eq '{coin}'"))
+            {
+                prices.Add(new KeyValuePair<DateTime, double>(entity.Timestamp.Value.DateTime, entity.price));
+            }
+            return prices;
         }
 
-        public async Task FetchPriceOfLast30Days(string coin)
+        public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast30Days(string coin)
         {
-
+            List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
+            await foreach (var entity in _tableClientPriceHistory30Days.QueryAsync<CoinPrice>($"coin eq '{coin}'"))
+            {
+                prices.Add(new KeyValuePair<DateTime, double>(entity.Timestamp.Value.DateTime, entity.price));
+            }
+            return prices;
         }
 
-        public async Task FetchPriceOfLast7Days(string coin)
+        public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast7Days(string coin)
         {
-
+            List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
+            await foreach (var entity in _tableClientPriceHistory7Days.QueryAsync<CoinPrice>($"coin eq '{coin}'"))
+            {
+                prices.Add(new KeyValuePair<DateTime, double>(entity.Timestamp.Value.DateTime, entity.price));
+            }
+            return prices;
         }
         
 

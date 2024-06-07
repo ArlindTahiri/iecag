@@ -10,6 +10,10 @@
 @using WebApp.Components.SubComponents;
 @implements IAsyncDisposable
 @using Microsoft.Extensions.Options;
+@inject TransactionService transactionService;
+@inject DataFetcherService dataFetcherService;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using WebApp.Models.ViewModels;
 
 
 <PageTitle>IeCAG - Wallet</PageTitle>
@@ -35,48 +39,65 @@
                 <h1 class="modal-title fs-5" id="transactionModalLabel">Add Transaction</h1>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <ul class="nav nav-pills nav-fill">
-                    <li class="nav-item">
-                        <button class="nav-link @(transactionType == "Buy" ? "active" : "")" aria-current="page" @onclick="(() => selectTransactionType(buyString))">Buy</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick="(() => selectTransactionType(sellString))">Sell</button>
-                    </li>
-                </ul>
-                <div class="form-group mt-4">
-                    <label for="selectCryptocurrency">Select Cryptocurrency</label>
-                    <select class="form-select mt-1" @bind="selectedCryptocurrency">
-                        <option value="" disabled selected>Select a cryptocurrency</option>
-                        @foreach (var crypto in cryptocurrencies)
-                        {
-                            <option value="@crypto">@crypto</option>
-                        }
-                    </select>
-                </div>
-                <div class="form-group mt-3">
-                    <label for="amount">Amount</label>
-                    <input type="number" class="form-control mt-1" id="amount" @bind="amount" oninput="calculatePricePaidAllOrAveragePrice()">
-                </div>
-                <div class="form-group mt-3 row">
-                    <div class="col">
-                        <label for="averagePrice">Average Price</label>
-                        <input type="number" class="form-control mt-1" id="averagePrice" @bind="averagePrice" oninput="calculatePricePaidAll()">
+            <EditForm Model="@transaction" OnValidSubmit="AddTransaction" FormName="AddTransaction">
+                <DataAnnotationsValidator />
+                <div class="modal-body">
+                    <ul class="nav nav-pills nav-fill">
+                        <li class="nav-item">
+                            <button class="nav-link @(transactionType == "Buy" ? "active" : "")" aria-current="page" @onclick='(() => selectTransactionType("Buy"))'>Buy</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick='(() => selectTransactionType("Sell"))'>Sell</button>
+                        </li>
+                    </ul>
+                    
+                    <div class="mt-4">
+                        <label>Select Cryptocurrency</label>
+                        <InputSelect @bind-Value="transaction.SelectedCryptocurrency" class="form-select mt-1" id="selectCryptocurrency">
+                            <option value="" disabled selected>Select a cryptocurrency</option>
+                            @foreach (var crypto in cryptocurrencies)
+                            {
+                                <option value="@crypto">@crypto</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => transaction.SelectedCryptocurrency" />
                     </div>
-                    <div class="col">
-                        <label for="pricePaidAll">Price Paid All</label>
-                        <input type="number" class="form-control mt-1" id="pricePaidAll" @bind="pricePaidAll" oninput="calculateAveragePrice()">
+                    
+                    <div class="mt-3">
+                        <label>Amount</label>
+                        <InputNumber @bind-Value="transaction.Amount" class="form-control mt-1" id="amount" oninput="calculatePricePaidAllOrAveragePrice()" />
+                        <ValidationMessage For="() => transaction.Amount" />
                     </div>
-                </div>
-                <div class="form-group mt-3">
-                    <label for="transactionDate">Transaction Date</label>
-                    <input type="datetime-local" class="form-control mt-1" id="transactionDate" @bind="transactionDate">
-                </div>
+
+                    <div class="mt-3 row">
+                        <div class="col">
+                            <label>Average Price</label>
+                            <InputNumber @bind-Value="transaction.AveragePrice" class="form-control mt-1" id="averagePrice" oninput="calculatePricePaidAll()" />
+                            <ValidationMessage For="() => transaction.AveragePrice" />
+                        </div>
+
+                        <div class="col">
+                            <label>Price Paid All</label>
+                            <InputNumber @bind-Value="transaction.PricePaidAll" class="form-control mt-1" id="pricePaidAll" oninput="calculateAveragePrice()" />
+                            <ValidationMessage For="() => transaction.PricePaidAll" />
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label>Transaction Date</label>
+                        <InputDate @bind-Value="transaction.TransactionDate" class="form-control mt-1" id="transactionDate" />
+                        <ValidationMessage For="() => transaction.TransactionDate" />
+                    </div>
+
+                    <div class="mt-3 text-center">
+                        <span class="text-danger">@errorMessage</span>
+                    </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal" @onclick="AddTransaction">Save changes</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Save changes</button>
             </div>
+            </EditForm>
         </div>
     </div>
 </div>
@@ -92,6 +113,8 @@
             if (!isNaN(averagePrice) && !isNaN(amount)) {
                 var pricePaidAll = averagePrice * amount;
                 document.getElementById("pricePaidAll").value = pricePaidAll.toFixed(2);
+                var event = new Event("change");
+                document.getElementById("pricePaidAll").dispatchEvent(event);
             }
         }
         else {
@@ -100,6 +123,8 @@
             if (!isNaN(pricePaidAll) && !isNaN(amount)) {
                 var averagePrice = pricePaidAll / amount;
                 document.getElementById("averagePrice").value = averagePrice.toFixed(2);
+                var event = new Event("change");
+                document.getElementById("averagePrice").dispatchEvent(event);
             }
         }
     }
@@ -111,6 +136,8 @@
         if (!isNaN(averagePrice) && !isNaN(amount)) {
             var pricePaidAll = averagePrice * amount;
             document.getElementById("pricePaidAll").value = pricePaidAll.toFixed(2);
+            var event = new Event("change");
+            document.getElementById("pricePaidAll").dispatchEvent(event);
         }
         
     }
@@ -122,8 +149,19 @@
         if (!isNaN(pricePaidAll) && !isNaN(amount)) {
             var averagePrice = pricePaidAll / amount;
             document.getElementById("averagePrice").value = averagePrice.toFixed(2);
+            var event = new Event("change");
+            document.getElementById("averagePrice").dispatchEvent(event);
         }
     }
+
+    function closeModal(modalId) {
+        const modalElement = document.querySelector(modalId);
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    }
+
 </script>
 
 <table class="table">
@@ -141,9 +179,7 @@
         @foreach (var walletEntry in walletEntries)
         {
             var averagePrice = walletEntry.AveragePrice;
-            var priceChange = walletEntry.CurrentPrice.HasValue && averagePrice.HasValue
-            ? Math.Round(((walletEntry.CurrentPrice.Value - averagePrice.Value) / averagePrice.Value) * 100, 2)
-            : (decimal?)null;
+            var priceChange = Math.Round(((walletEntry.CurrentPrice - averagePrice) / averagePrice) * 100, 2);
             <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Name anzuzeigen">
                 <td>@walletEntry.Name</td>
                 <td>@walletEntry.CurrentPrice</td>
@@ -157,16 +193,13 @@
 </table>
 
 @code {
-    private string buyString = "Buy";
-    private string sellString = "Sell";
     PriceChart priceChart;
-
-    private string selectedCryptocurrency;
-    private decimal amount;
-    private decimal? averagePrice;
-    private decimal? pricePaidAll;
     private string transactionType = "Buy";
-    private DateTime transactionDate = DateTime.Now;
+    private string username;
+    private string? errorMessage;
+
+    [SupplyParameterFromForm]
+    public TransactionModel transaction { get; set; } = new();
 
     private void selectTransactionType(string type)
     {
@@ -176,143 +209,81 @@
     private List<string> cryptocurrencies = new List<string> { "Bitcoin", "Ethereum", "Cronos" }; // Beispielhafte Liste
 
 
-    public List<KeyValuePair<DateTime, decimal>> priceList { get; set; } = new List<KeyValuePair<DateTime, decimal>>
-    {
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-30), 34200),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-25), 34800),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-20), 37400),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-15), 36000),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-10), 36600),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now.AddMinutes(-5), 37200),
-        new KeyValuePair<DateTime, decimal>(DateTime.Now, 37000),
-    };
+    public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>();
 
-    private List<WalletEntry> walletEntries = new List<WalletEntry>
-    {
-        new WalletEntry { Name = "Bitcoin", Amount = 0.5m, AveragePrice = 45000m, CurrentPrice = 48000m },
-        new WalletEntry { Name = "Ethereum", Amount = 2m, AveragePrice = 3000m, CurrentPrice = 3200m },
-        new WalletEntry { Name = "Cronos", Amount = 1000m, AveragePrice = 0.2m, CurrentPrice = 0.25m }
-    };
+    private List<WalletEntry> walletEntries = new List<WalletEntry>();
 
 
     private HubConnection? hubConnection;
-    
-    [CascadingParameter]
-    public HttpContext? HttpContext { get; set; }
+
 
     protected override async Task OnInitializedAsync()
     {
-        /*
-        //Get all the transactions from the Azure Table
-        var options = AzureTableStorageOptions.Value;
-
-        var serviceClient = new TableServiceClient(new Uri(options.TableEndpoint), new TableSharedKeyCredential(options.AccountName, options.AccountKey));
-        var tableClientTransactions = serviceClient.GetTableClient("Transactions");
-        var tableClientPrices = serviceClient.GetTableClient("HistoricalPrices180Days");
-
-        var identity = (ClaimsIdentity)HttpContext.User.Identity;
-        var userNameClaim = identity.FindFirst(ClaimTypes.Name);
-        var userName = userNameClaim?.Value;
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        username = user.Identity?.Name;
 
 
-        // Definieren der Spaltennamen
-        var userIdColumn = "userId";
-        var cryptocurrencyNameColumn = "cryptocurrencyName";
-        var amountColumn = "amount";
-        var pricePaidAllColumn = "pricePaidAll";
-            var transactionDateColumn = "transactionDate";
-            var transactionTypeColumn = "transactionType";
-
-            // Abfrage zum Abrufen der Transaktionen des Benutzers
-            var userTransactionsQuery = tableClientTransactions.QueryAsync<TableEntity>(
-        filter: $"{userIdColumn} eq '{userName}'",
-        select: new[] { cryptocurrencyNameColumn, amountColumn, pricePaidAllColumn, transactionDateColumn, transactionTypeColumn }
-                    );
-
-                    List<TransactionEntry> allTransactionsOfUser = new List<TransactionEntry>();
-
-                    await foreach (var entity in userTransactionsQuery)
-                    {
-                    var transaction = new TransactionEntry
-                    {
-                    UserId = entity.GetString(userIdColumn),
-                    CryptocurrencyName = entity.GetString(cryptocurrencyNameColumn),
-                    Amount = Convert.ToDecimal(entity[amountColumn]),
-                    PricePaidAll = Convert.ToDecimal(entity[pricePaidAllColumn]),
-            TransactionDate = entity.GetDateTime(transactionDateColumn).GetValueOrDefault(),
-        TransactionType = entity.GetString(transactionTypeColumn)
-        };
-
-        allTransactionsOfUser.Add(transaction);
-        }
+        List<Transaction> allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
 
         // Erstelle Empty WalletEntries nur mit dem Namen
-        walletEntries = allTransactionsOfUser.Select(transaction => new WalletEntry { Name = transaction.CryptocurrencyName }).Distinct().ToList();
-
-
-
-
-            // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
-                foreach (var walletEntry in walletEntries)
-                {
-                var AlltransactionsOfCurrency = allTransactionsOfUser
-            .Where(transaction => transaction.CryptocurrencyName == walletEntry.Name)
-            .OrderBy(t => t.TransactionDate)
+        walletEntries = allTransactionsOfUser
+            .Select(transaction => transaction.coin)
+            .Distinct()
+            .Select(name => new WalletEntry { Name = name })
             .ToList();
-            walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.Amount : -transaction.Amount);
-
-                // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
-                if (walletEntry.Amount > 0)
-                {
-                // Setze den durchschnittlichen Kaufpreis
-        walletEntry.AveragePrice = FinanceCalculations.CalculateAveragePrice(AlltransactionsOfCurrency);
-        }
-
-        }
 
 
-        // Erstelle PortfolioValueList für 180 Tage
-        var cryptocurrencyNameColumn2 = "cryptocurrencyName";
-        var price = "price";
-            var dateTimeStamp = "dateTimeStamp";
+        // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
+        foreach (var walletEntry in walletEntries)
+        {
+            var AlltransactionsOfCurrency = allTransactionsOfUser
+                .Where(transaction => transaction.coin == walletEntry.Name)
+                .OrderBy(t => t.TransactionDate)
+                .ToList();
 
-            foreach (var walletEntry in walletEntries)
+            walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.amount : -transaction.amount);
+
+            // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
+            if (walletEntry.Amount > 0)
             {
-            // Abfrage zum Abrufen der Transaktionen des Benutzers
-                var historicalPricesQuery = tableClientPrices.QueryAsync<TableEntity>(
-                filter: $"{cryptocurrencyNameColumn2} eq '{walletEntry.Name}'",
-            select: new[] { cryptocurrencyNameColumn2, price, dateTimeStamp }
-            );
-
-            List<KeyValuePair<DateTime, decimal>> historicalPricesOfCryptoCurrency = new List<KeyValuePair<DateTime, decimal>>();
-
-                await foreach (var entity in historicalPricesQuery)
-                {
-                var transaction = new KeyValuePair<DateTime, decimal>(entity.GetDateTime(dateTimeStamp).GetValueOrDefault(), Convert.ToDecimal(entity[price]));
-
-                historicalPricesOfCryptoCurrency.Add(transaction);
+                // Setze den durchschnittlichen Kaufpreis
+                walletEntry.AveragePrice = HelperClasses.FinanceCalculations.CalculateAveragePrice(AlltransactionsOfCurrency);
             }
+        }
+
+        foreach (var walletEntry in walletEntries)
+        {
+            List<KeyValuePair<DateTime,double>> historicalPricesOfCryptoCurrency = await dataFetcherService.FetchPriceOfLast180Days(walletEntry.Name);
 
             historicalPricesOfCryptoCurrency = historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList();
 
-            historicalPricesOfCryptoCurrency = FinanceCalculations.CalculatePortfolioValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
+            historicalPricesOfCryptoCurrency = HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
 
             // now add values to priceList
-                if (priceList.Count == 0)
-                {
+            if (priceList.Count == 0)
+            {
                 priceList = historicalPricesOfCryptoCurrency;
             }
-                else
-                {
+            else
+            {
                 for (int j = 0; j < priceList.Count; j++)
-                    {
-                    priceList[j] = new KeyValuePair<DateTime, decimal>(priceList[j].Key, priceList[j].Value + historicalPricesOfCryptoCurrency[j].Value);
+                {
+                    priceList[j] = new KeyValuePair<DateTime, double>(priceList[j].Key, priceList[j].Value + historicalPricesOfCryptoCurrency[j].Value);
+                }
             }
         }
 
-        }
-        */
+        List<CoinPrice> coinPrices = await dataFetcherService.FetchAllCurrentPrices();
 
+        foreach(var walletEntry in walletEntries)
+        {
+            var coinPrice = coinPrices.FirstOrDefault(cp => cp.PartitionKey == walletEntry.Name);
+            if (coinPrice != null)
+            {
+                walletEntry.CurrentPrice = coinPrice.price;
+            }
+        }
 
 
 
@@ -320,13 +291,13 @@
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
             .Build();
 
-        hubConnection.On<string, decimal?>("ReceivePriceUpdate", async (name, price) =>
+        hubConnection.On<string, double>("ReceivePriceUpdate", async (name, price) =>
         {
             var existingEntry = walletEntries.FirstOrDefault(entry => entry.Name == name);
             if (existingEntry != null)
             {
                 existingEntry.CurrentPrice = price; // Aktualisiere den Preis des vorhandenen Eintrags
-                decimal allValue = walletEntries.Sum(entry => entry.Amount.GetValueOrDefault() * entry.CurrentPrice.GetValueOrDefault());
+                double allValue = walletEntries.Sum(entry => entry.Amount * entry.CurrentPrice);
                 await priceChart.UpdateChart(DateTime.Now, allValue);
             }
             InvokeAsync(StateHasChanged);
@@ -354,8 +325,63 @@
 
     private async Task AddTransaction()
     {
-        
+        var walletEntry = walletEntries.FirstOrDefault(sp => sp.Name == transaction.SelectedCryptocurrency);
+        if(walletEntry == null && transactionType == "Sell")
+        {
+            errorMessage = "You don't have any of this cryptocurrency to sell";
+            return;
+        }
+        if(walletEntry != null && walletEntry.Amount < transaction.Amount && transactionType == "Sell")
+        {
+            errorMessage = "You don't have enough of this cryptocurrency to sell";
+            return;
+        }
+        await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, transaction.TransactionDate, transactionType);
 
+        if (walletEntry != null)
+        {
+            if (transactionType == "Buy")
+            {
+                // Berechne den neuen durchschnittlichen Kaufpreis
+                var totalCost = (walletEntry.Amount * walletEntry.AveragePrice) + (transaction.Amount * transaction.AveragePrice);
+                walletEntry.Amount += transaction.Amount;
+                walletEntry.AveragePrice = totalCost / walletEntry.Amount;
+            }
+            else if (transactionType == "Sell")
+            {
+                walletEntry.Amount -= transaction.Amount;
+                if (walletEntry.Amount < 0)
+                {
+                    walletEntry.Amount = 0;
+                }
+            }
+        }
+        else if (transactionType == "Buy") // Neuen Eintrag nur bei Kauf hinzufügen
+        {
+            walletEntries.Add(new WalletEntry
+                {
+                    Name = transaction.SelectedCryptocurrency,
+                    Amount = transaction.Amount,
+                    AveragePrice = transaction.AveragePrice,
+                    CurrentPrice = await dataFetcherService.FetchCurrentPrice(transaction.SelectedCryptocurrency) // Oder den aktuellen Preis setzen, wenn verfügbar
+                });
+        }
+
+        await CloseModalAsync();
+
+        transaction = new TransactionModel();
+
+        // Aktualisieren der Ansicht
+        StateHasChanged();
     }
 
+
+    // JavaScript Interop zum Schließen des Modals
+    [Inject]
+    IJSRuntime JSRuntime { get; set; }
+
+    private async Task CloseModalAsync()
+    {
+        await JSRuntime.InvokeVoidAsync("closeModal", "#transactionModal");
+    }
 }

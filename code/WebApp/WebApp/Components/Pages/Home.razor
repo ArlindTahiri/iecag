@@ -31,8 +31,6 @@
 </table>
 
 @code {
-    PriceChart priceChart;
-
     private List<CoinPrice> priceEntries = new List<CoinPrice>();
     private HubConnection? hubConnection;
 
@@ -41,9 +39,6 @@
 
         priceEntries = await dataFetcherService.FetchAllCurrentPrices();
         
-        
-
-
 
         // Connect to the SignalR PriceHub
         hubConnection = new HubConnectionBuilder()
