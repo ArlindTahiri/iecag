@@ -1,4 +1,5 @@
 ﻿using WebApp.Models.Entities;
+using WebApp.Services;
 
 namespace WebApp.HelperClasses
 {
@@ -30,7 +31,82 @@ namespace WebApp.HelperClasses
             return totalCost / totalAmount;
         }
 
-        public static List<KeyValuePair<DateTime, double>> CalculatePortfolioValueForTheLastXDays(List<KeyValuePair<DateTime, double>> historicalPricesOfCryptoCurrency, string CryptcurrencyName, List<Transaction> allTransactionsOfUser, int days)
+        public async static Task CalculatePortfolioValueForTheLastXDays(DataFetcherService dataFetcherService,List<WalletEntry> walletEntries, List<KeyValuePair<DateTime, double>> priceList, List<KeyValuePair<string, double>> dataList, List<Transaction> allTransactionsOfUser, int days)
+        {
+            walletEntries.Clear();
+            // Erstelle Empty WalletEntries nur mit dem Namen
+            var newWalletEntries = allTransactionsOfUser
+                .Select(transaction => transaction.coin)
+                .Distinct()
+                .Select(name => new WalletEntry { Name = name })
+                .ToList();
+            walletEntries.AddRange(newWalletEntries);
+
+
+            // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
+            foreach (var walletEntry in walletEntries)
+            {
+                var AlltransactionsOfCurrency = allTransactionsOfUser
+                    .Where(transaction => transaction.coin == walletEntry.Name)
+                    .OrderBy(t => t.TransactionDate)
+                    .ToList();
+
+                walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.amount : -transaction.amount);
+
+                // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
+                if (walletEntry.Amount > 0)
+                {
+                    // Setze den durchschnittlichen Kaufpreis
+                    walletEntry.AveragePrice = CalculateAveragePrice(AlltransactionsOfCurrency);
+                }
+            }
+
+            // Füge den aktuellen Preis für jede WalletEntry hinzu
+            List<CoinPrice> coinPrices = await dataFetcherService.FetchAllCurrentPrices();
+            foreach (var walletEntry in walletEntries)
+            {
+                var coinPrice = coinPrices.FirstOrDefault(cp => cp.PartitionKey == walletEntry.Name);
+                if (coinPrice != null)
+                {
+                    walletEntry.CurrentPrice = coinPrice.price;
+                }
+            }
+
+
+            // PriceChart: Berechne den Wert des Portfolios für die letzten 180 Tage
+            priceList.Clear();
+            foreach (var walletEntry in walletEntries)
+            {
+                List<KeyValuePair<DateTime, double>> historicalPricesOfCryptoCurrency = await dataFetcherService.FetchPriceOfLastXDays(walletEntry.Name, days);
+
+                historicalPricesOfCryptoCurrency = historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList();
+
+                historicalPricesOfCryptoCurrency = CalculateEntryValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
+
+                // now add values to priceList
+                if (priceList.Count == 0)
+                {
+                    priceList = historicalPricesOfCryptoCurrency;
+                }
+                else
+                {
+                    for (int j = 0; j < priceList.Count; j++)
+                    {
+                        priceList[j] = new KeyValuePair<DateTime, double>(priceList[j].Key, priceList[j].Value + historicalPricesOfCryptoCurrency[j].Value);
+                    }
+                }
+            }
+
+            
+            // DoughnutChat: Füge die Werte der Allocation Liste hinzu
+            dataList.Clear();
+            foreach (var walletEntry in walletEntries)
+            {
+                dataList.Add(new KeyValuePair<string, double>(walletEntry.Name, walletEntry.CurrentPrice * walletEntry.Amount));
+            }
+        }
+
+        public static List<KeyValuePair<DateTime, double>> CalculateEntryValueForTheLastXDays(List<KeyValuePair<DateTime, double>> historicalPricesOfCryptoCurrency, string CryptcurrencyName, List<Transaction> allTransactionsOfUser, int days)
         {
             var AlltransactionsOfCurrencyOfLastXDays = allTransactionsOfUser
             .Where(transaction => transaction.coin == CryptcurrencyName && transaction.TransactionDate <= DateTime.Today.AddDays(days))

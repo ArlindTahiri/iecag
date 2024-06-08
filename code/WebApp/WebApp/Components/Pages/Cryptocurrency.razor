@@ -23,7 +23,7 @@
     protected override async Task OnInitializedAsync()
     {
         Price = await dataFetcherService.FetchCurrentPrice(Name);
-        priceList = await dataFetcherService.FetchPriceOfLast7Days(Name);
+        priceList = await dataFetcherService.FetchPriceOfLastXDays(Name,7);
 
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
@@ -44,19 +44,7 @@
 
     private async Task OnTimeRangeChanged(int days)
     {
-        // Holen Sie die Daten basierend auf der neuen Zeitspanne ab
-        if (days == 7)
-        {
-            priceList = await dataFetcherService.FetchPriceOfLast7Days(Name);
-        }
-        else if (days == 30)
-        {
-            priceList = await dataFetcherService.FetchPriceOfLast30Days(Name);
-        }
-        else if (days == 180)
-        {
-            priceList = await dataFetcherService.FetchPriceOfLast180Days(Name);
-        }
+        priceList = await dataFetcherService.FetchPriceOfLastXDays(Name, days);
         await priceChart.UpdateChart();
     }
 
