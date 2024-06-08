@@ -136,6 +136,8 @@ azure_build_webapp:
   image: mcr.microsoft.com/dotnet/sdk:8.0
   needs:
     - azure_create_webapp
+  before_script:
+    - echo "Building webapp"
   script:
     - apt update && apt install zip
     - cd code/WebApp/
