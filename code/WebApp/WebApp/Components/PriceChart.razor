@@ -1,16 +1,16 @@
 ﻿@rendermode InteractiveServer
 
 <!-- In deiner Blazor-Komponente -->
-<div class="chart-container" style="position: relative; height:40vh; width:50vw">
+<div class="chart-container" style="position: relative; height:@Height; width:@Width; padding:20px; box-shadow: 0 7px 25px rgba(0,0,0,0.6); border-radius:25px;margin:10px; background: #2B3036;">
     <canvas id="@Name"></canvas>
 </div>
 
 
 
 <script>
-    var myChart;
-    createPriceChart = (priceChartID,labels, data) => {
-        myChart = new Chart(document.getElementById(priceChartID), {
+    var PriceChart;
+    createPriceChart = (priceChartID, labels, data) => {
+        PriceChart = new Chart(document.getElementById(priceChartID), {
             type: 'line',
             data: {
                 labels: labels,
@@ -23,6 +23,7 @@
                 }]
             },
             options: {
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: false
@@ -37,33 +38,21 @@
                         }
                     }
                 },
-                plugins: {
-                    zoom: {
-                        zoom: {
-                            wheel: {
-                                enabled: true,
-                            },
-                            pinch: {
-                                enabled: true
-                            },
-                            mode: 'xy'
-                        }
-                    }
-                }
+                
             }
         });
     };
 
-    addData = (labels, newData) => {
+    updatePriceChart = (labels, newData) => {
         console.log('addData function is executing.'); // Log für Ausführung der Funktion
         try {
-            myChart.data.labels = labels;
-            myChart.data.datasets.forEach((dataset) => {
+            PriceChart.data.labels = labels;
+            PriceChart.data.datasets.forEach((dataset) => {
                 dataset.data = newData;
             });
-            myChart.update();
+            PriceChart.update();
         } catch (error) {
-            console.error('An error occurred in addData function:', error); // Fehlermeldung in der Konsole anzeigen
+            console.error('An error occurred in updatePriceChart function:', error); // Fehlermeldung in der Konsole anzeigen
         }
     }
 
@@ -96,7 +85,7 @@
         pricesList.RemoveAll(kv => kv.Key < oldestValidTime);
 
         // Erstelle ein neues Diagramm mit den aktualisierten Preisen
-        await JSRuntime.InvokeVoidAsync("addData", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
+        await JSRuntime.InvokeVoidAsync("updatePriceChart", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
     }
 
 
@@ -120,6 +109,12 @@
             }
         }
     }
+
+    [Parameter]
+    public string Width { get; set; } = "80vw";
+
+    [Parameter]
+    public string Height { get; set; } = "70vh";
 
     [Parameter] public List<KeyValuePair<DateTime, double>> pricesList { get; set; }
 }
