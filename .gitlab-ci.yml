@@ -160,4 +160,6 @@ azure_deploy_wrapper:
     - build_api_wrapper
   script:
     - az containerapp env create --name $CONTAINER_ENV --resource-group $RESOURCE_GROUP --location $AZURE_LOCATION
-    - az containerapp up -n $WRAPPER_CONTAINER_NAME --image $CI_REGISTRY_IMAGE/api_wrapper:latest --ingress external --target-port 8080 --environment $CONTAINER_ENV --registry-server $CI_REGISTRY --registry-password $CI_REGISTRY_PASSWORD --registry-username $CI_REGISTRY_USER || exit 0
+    - AZURE_ACCESS_KEY="$(az storage account keys list --account-name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP | jq -r .[0].value)"
+    - echo ${#AZURE_ACCESS_KEY}
+    - az containerapp up -n $WRAPPER_CONTAINER_NAME --image $CI_REGISTRY_IMAGE/api_wrapper:latest --ingress external --target-port 8080 --environment $CONTAINER_ENV --registry-server $CI_REGISTRY --registry-password $CI_REGISTRY_PASSWORD --registry-username $CI_REGISTRY_USER --env-vars COINGECKO_TOKEN=$COINGECKO_TOKEN AZURE_ACCOUNT_NAME=$STORAGE_ACCOUNT AZURE_ACCESS_KEY=$AZURE_ACCESS_KEY || exit 0
