@@ -1,4 +1,5 @@
-﻿using WebApp.Models.Entities;
+﻿using System.Collections.Concurrent;
+using WebApp.Models.Entities;
 using WebApp.Services;
 
 namespace WebApp.HelperClasses
@@ -42,35 +43,46 @@ namespace WebApp.HelperClasses
                 .ToList();
             walletEntries.AddRange(newWalletEntries);
 
-
-            // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
-            foreach (var walletEntry in walletEntries)
-            {
-                var AlltransactionsOfCurrency = allTransactionsOfUser
-                    .Where(transaction => transaction.coin == walletEntry.Name)
-                    .OrderBy(t => t.TransactionDate)
-                    .ToList();
-
-                walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.amount : -transaction.amount);
-
-                // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
-                if (walletEntry.Amount > 0)
-                {
-                    // Setze den durchschnittlichen Kaufpreis
-                    walletEntry.AveragePrice = CalculateAveragePrice(AlltransactionsOfCurrency);
-                }
-            }
-
-            // Füge den aktuellen Preis für jede WalletEntry hinzu
+            // Fetch all current prices
             List<CoinPrice> coinPrices = await dataFetcherService.FetchAllCurrentPrices();
-            foreach (var walletEntry in walletEntries)
+
+            // Use ConcurrentBag to safely collect results from parallel processing
+            var results = new ConcurrentBag<Task>();
+
+            // Perform calculations for each wallet entry in parallel
+            Parallel.ForEach(walletEntries, walletEntry =>
             {
-                var coinPrice = coinPrices.FirstOrDefault(cp => cp.PartitionKey == walletEntry.Name);
-                if (coinPrice != null)
+                var task = Task.Run(() =>
                 {
-                    walletEntry.CurrentPrice = coinPrice.price;
-                }
-            }
+                    var AlltransactionsOfCurrency = allTransactionsOfUser
+                        .Where(transaction => transaction.coin == walletEntry.Name)
+                        .OrderBy(t => t.TransactionDate)
+                        .ToList();
+
+                    walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.amount : -transaction.amount);
+
+                    // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
+                    if (walletEntry.Amount > 0)
+                    {
+                        // Setze den durchschnittlichen Kaufpreis
+                        walletEntry.AveragePrice = CalculateAveragePrice(AlltransactionsOfCurrency);
+                    }
+
+                    // Fetch current price
+                    var coinPrice = coinPrices.FirstOrDefault(cp => cp.PartitionKey == walletEntry.Name);
+                    if (coinPrice != null)
+                    {
+                        walletEntry.CurrentPrice = coinPrice.price;
+                    }
+
+                    // Return a placeholder result
+                    return 0;
+                });
+                results.Add(task);
+            });
+
+            // Wait for all tasks to complete
+            await Task.WhenAll(results);
 
 
             // PriceChart: Berechne den Wert des Portfolios für die letzten 180 Tage

@@ -245,7 +245,7 @@
         stopwatch.Start();
         await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allTransactionsOfUser, lastSelecteddays);
         stopwatch.Stop();
-        Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed.TotalSeconds);
+        Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed.TotalMilliseconds);
 
         await priceChart.UpdateChart();
         await doughnutChart.UpdateChart();
