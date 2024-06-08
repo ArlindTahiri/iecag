@@ -139,7 +139,7 @@ azure_build_webapp:
   before_script:
     - echo "Building webapp"
   script:
-    - apt update && apt install zip
+    - apt update && apt install -y zip
     - cd code/WebApp/
     - dotnet publish -c Release -o out
     - cd out
