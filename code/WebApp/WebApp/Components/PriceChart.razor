@@ -1,11 +1,14 @@
 ﻿@rendermode InteractiveServer
 
-<!-- In deiner Blazor-Komponente -->
 <div class="chart-container" style="position: relative; height:@Height; width:@Width; padding:20px; box-shadow: 0 7px 25px rgba(0,0,0,0.6); border-radius:25px;margin:10px; background: #2B3036;">
+    <div class="button-group" style="position: absolute; top: 10px; right: 10px;">
+        <button type="button" class="btn btn-outline-primary" @onclick="() => UpdateTimeRange(7)">7D</button>
+        <button type="button" class="btn btn-outline-primary" @onclick="() => UpdateTimeRange(30)">30D</button>
+        <button type="button" class="btn btn-outline-primary" @onclick="() => UpdateTimeRange(180)">180D</button>
+    </div>
     <canvas id="@Name"></canvas>
+
 </div>
-
-
 
 <script>
     var PriceChart;
@@ -38,12 +41,13 @@
                         }
                     }
                 },
-                
+
             }
         });
     };
 
     updatePriceChart = (labels, newData) => {
+        console.log('addData function is executing.'); // Log für Ausführung der Funktion
         try {
             PriceChart.data.labels = labels;
             PriceChart.data.datasets.forEach((dataset) => {
@@ -59,6 +63,8 @@
 
 @code {
     private bool _isRendered;
+    private int _timeRangeInDays;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -68,22 +74,19 @@
         }
     }
 
-
     public async Task UpdateChart(DateTime dateTime, double price)
     {
+        var interval = GetIntervalForTimeRange(_timeRangeInDays);
+
         // Füge den neuen Datenpunkt hinzu oder überschreibe den letzten Wert
-        if (pricesList.Count > 0 && dateTime.Subtract(pricesList.Last().Key).TotalSeconds < 30)
+        if (pricesList.Count > 0 && dateTime.Subtract(pricesList.Last().Key).TotalMinutes < interval)
         {
-            pricesList[pricesList.Count - 1] = new KeyValuePair<DateTime, double>(pricesList[pricesList.Count - 1].Key, price);
+            pricesList[pricesList.Count - 1] = new KeyValuePair<DateTime, double>(pricesList.Last().Key, price);
         }
         else
         {
             pricesList.Add(new KeyValuePair<DateTime, double>(dateTime, price));
         }
-
-        // Entferne Datenpunkte, die älter als 30 Minuten sind
-        DateTime oldestValidTime = dateTime.AddMinutes(-30);
-        pricesList.RemoveAll(kv => kv.Key < oldestValidTime);
 
         // Erstelle ein neues Diagramm mit den aktualisierten Preisen
         await JSRuntime.InvokeVoidAsync("updatePriceChart", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
@@ -95,15 +98,28 @@
         {
             await JSRuntime.InvokeVoidAsync("updatePriceChart", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
         }
-        
     }
 
+    private int GetIntervalForTimeRange(int days)
+    {
+        return days switch
+        {
+            7 => 30,       // 30 Minuten
+            30 => 120,     // 2 Stunden
+            180 => 720,    // 12 Stunden
+            _ => 30        // Default 30 Minuten
+        };
+    }
 
+    private async Task UpdateTimeRange(int days)
+    {
+        _timeRangeInDays = days;
+        await TimeRangeChanged.InvokeAsync(days);
+    }
 
+    [Parameter] public EventCallback<int> TimeRangeChanged { get; set; }
 
-
-    [Inject]
-    public IJSRuntime JSRuntime { get; set; }
+    [Inject] public IJSRuntime JSRuntime { get; set; }
 
     private string _name;
 

@@ -9,7 +9,7 @@
 
 <h1>@Name at @Price €</h1>
 
-<PriceChart Name="@Name" pricesList="priceList" @ref="priceChart" />
+<PriceChart Name="@Name" pricesList="priceList" @ref="priceChart" TimeRangeChanged="OnTimeRangeChanged" />
 
 @code {
     [Parameter] public string Name { get; set; }
@@ -40,6 +40,24 @@
             });
 
         await hubConnection.StartAsync();
+    }
+
+    private async Task OnTimeRangeChanged(int days)
+    {
+        // Holen Sie die Daten basierend auf der neuen Zeitspanne ab
+        if (days == 7)
+        {
+            priceList = await dataFetcherService.FetchPriceOfLast7Days(Name);
+        }
+        else if (days == 30)
+        {
+            priceList = await dataFetcherService.FetchPriceOfLast30Days(Name);
+        }
+        else if (days == 180)
+        {
+            priceList = await dataFetcherService.FetchPriceOfLast180Days(Name);
+        }
+        await priceChart.UpdateChart();
     }
 
     public bool IsConnected =>
