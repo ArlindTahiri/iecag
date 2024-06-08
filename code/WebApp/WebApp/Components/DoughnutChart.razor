@@ -38,6 +38,9 @@
             },
             options: {
                 maintainAspectRatio: false,
+                animation: {
+                    duration: 0 // Disable animation
+                }
             }
         });
     };
@@ -59,10 +62,12 @@
 
 
 @code {
+    private bool _isRendered;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            _isRendered = true;
             await JSRuntime.InvokeVoidAsync("createDoughnutChart", Name, DataList.Select(kv => kv.Key.ToString()).ToArray(), DataList.Select(kv => kv.Value).ToArray());
         }
     }
@@ -85,6 +90,15 @@
 
         // Erstelle ein neues Diagramm mit den aktualisierten Daten
         await JSRuntime.InvokeVoidAsync("updateDoughnutChart", DataList.Select(kv => kv.Key).ToArray(), DataList.Select(kv => kv.Value).ToArray());
+    }
+
+    public async Task UpdateChart()
+    {
+        if (_isRendered)
+        {
+            await JSRuntime.InvokeVoidAsync("updateDoughnutChart", DataList.Select(kv => kv.Key).ToArray(), DataList.Select(kv => kv.Value).ToArray());
+        }
+        
     }
 
     [Inject]

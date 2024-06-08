@@ -302,6 +302,9 @@
             dataList.Add(new KeyValuePair<string,double>(walletEntry.Name,walletEntry.CurrentPrice * walletEntry.Amount));
         }
 
+        await priceChart.UpdateChart();
+        await doughnutChart.UpdateChart();
+
 
 
         hubConnection = new HubConnectionBuilder()
@@ -385,6 +388,16 @@
                 });
         }
 
+        // Aktualisieren der Diagramme
+        dataList.Clear();
+        foreach (var walletEntryDoughnutChart in walletEntries)
+        {
+            dataList.Add(new KeyValuePair<string, double>(walletEntryDoughnutChart.Name, walletEntryDoughnutChart.CurrentPrice * walletEntryDoughnutChart.Amount));
+        }
+        await doughnutChart.UpdateChart();
+
+
+        // Schließen des Modals        
         await CloseModalAsync();
 
         transaction = new TransactionModel();

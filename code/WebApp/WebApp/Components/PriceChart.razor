@@ -59,10 +59,12 @@
 </script>
 
 @code {
+    private bool _isRendered;
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            _isRendered = true;
             await JSRuntime.InvokeVoidAsync("createPriceChart", Name, pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
         }
     }
@@ -87,6 +89,17 @@
         // Erstelle ein neues Diagramm mit den aktualisierten Preisen
         await JSRuntime.InvokeVoidAsync("updatePriceChart", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
     }
+
+    public async Task UpdateChart()
+    {
+        if (_isRendered)
+        {
+            await JSRuntime.InvokeVoidAsync("updatePriceChart", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
+        }
+        
+    }
+
+
 
 
 
