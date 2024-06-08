@@ -46,7 +46,6 @@
     };
 
     updateDoughnutChart = (labels, newData) => {
-        console.log('updateDoughnutChart function is executing.'); // Log für Ausführung der Funktion
         try {
             DoughnutChart.data.labels = labels;
             DoughnutChart.data.datasets.forEach((dataset) => {
@@ -56,7 +55,21 @@
         } catch (error) {
             console.error('An error occurred in updateDoughnutChart function:', error); // Fehlermeldung in der Konsole anzeigen
         }
-    }
+    };
+
+    updateDoughnutChartWithValue = (label, newValue) => {
+        try {
+            const index = DoughnutChart.data.labels.indexOf(label);
+            if (index !== -1) {
+                DoughnutChart.data.datasets[0].data[index] = newValue;
+                DoughnutChart.update();
+            } else {
+                console.error('Label not found in the chart data');
+            }
+        } catch (error) {
+            console.error('An error occurred in updateDoughnutChart function:', error);
+        }
+    };
 </script>
 
 
@@ -89,7 +102,7 @@
         }
 
         // Erstelle ein neues Diagramm mit den aktualisierten Daten
-        await JSRuntime.InvokeVoidAsync("updateDoughnutChart", DataList.Select(kv => kv.Key).ToArray(), DataList.Select(kv => kv.Value).ToArray());
+        await JSRuntime.InvokeVoidAsync("updateDoughnutChartWithValue", label, value);
     }
 
     public async Task UpdateChart()
@@ -98,7 +111,6 @@
         {
             await JSRuntime.InvokeVoidAsync("updateDoughnutChart", DataList.Select(kv => kv.Key).ToArray(), DataList.Select(kv => kv.Value).ToArray());
         }
-        
     }
 
     [Inject]
