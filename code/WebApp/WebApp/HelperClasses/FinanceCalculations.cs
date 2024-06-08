@@ -85,31 +85,36 @@ namespace WebApp.HelperClasses
             await Task.WhenAll(results);
 
 
-            // PriceChart: Berechne den Wert des Portfolios für die letzten 180 Tage
-            priceList.Clear();
-            foreach (var walletEntry in walletEntries)
+            // PriceChart: Berechne den Wert des Portfolios für die letzten X Tage
+            // Prepare tasks to fetch historical prices for each wallet entry
+            var priceFetchingTasks = walletEntries.Select(async walletEntry =>
             {
                 List<KeyValuePair<DateTime, double>> historicalPricesOfCryptoCurrency = await dataFetcherService.FetchPriceOfLastXDays(walletEntry.Name, days);
-
                 historicalPricesOfCryptoCurrency = historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList();
+                return historicalPricesOfCryptoCurrency;
+            });
 
-                historicalPricesOfCryptoCurrency = CalculateEntryValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
+            // Wait for all tasks to complete and collect results
+            var fetchedPrices = await Task.WhenAll(priceFetchingTasks);
 
-                // now add values to priceList
+            // Aggregate fetched prices into priceList
+            priceList.Clear();
+            foreach (var pricesOfCryptoCurrency in fetchedPrices)
+            {
                 if (priceList.Count == 0)
                 {
-                    priceList = historicalPricesOfCryptoCurrency;
+                    priceList.AddRange(pricesOfCryptoCurrency);
                 }
                 else
                 {
                     for (int j = 0; j < priceList.Count; j++)
                     {
-                        priceList[j] = new KeyValuePair<DateTime, double>(priceList[j].Key, priceList[j].Value + historicalPricesOfCryptoCurrency[j].Value);
+                        priceList[j] = new KeyValuePair<DateTime, double>(priceList[j].Key, priceList[j].Value + pricesOfCryptoCurrency[j].Value);
                     }
                 }
             }
 
-            
+
             // DoughnutChat: Füge die Werte der Allocation Liste hinzu
             dataList.Clear();
             foreach (var walletEntry in walletEntries)
