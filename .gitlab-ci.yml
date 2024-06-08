@@ -25,7 +25,7 @@ variables:
     value: "iecagweb"
   WEBAPP_PATH:
     description: "web app path"
-    value: "/path/to/app.zip"
+    value: "/app.zip"
   CONTAINER_ENV:
     description: "container environment"
     value: "iecagenv"
@@ -128,17 +128,34 @@ azure_create_webapp:
     - azure_create_datatable
   script:
     - STORAGE_CONNECTION_STRING=$(az storage account show-connection-string --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query connectionString -o tsv)
-    - az webapp create --resource-group $RESOURCE_GROUP --plan AppServicePlan --name $WEBAPP_NAME --runtime "DOTNET|6.0" || exit 0
+    - az webapp create --resource-group $RESOURCE_GROUP --plan AppServicePlan --name $WEBAPP_NAME --runtime "DOTNET|8.0" || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --settings AzureTable=$STORAGE_CONNECTION_STRING || exit 0
-  
+
+azure_build_webapp:
+  stage: azure_setup
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  needs:
+    - azure_create_webapp
+  script:
+    - apt update && apt install zip
+    - cd code/WebApp/
+    - dotnet publish -c Release -o out
+    - cd out
+    - zip -r /app.zip .
+  artifacts:
+    when: on_success
+    access: all
+    expire_in: 30 days
+    paths:
+      - /app.zip
+
 azure_deploy_webapp:
   stage: azure_setup
   allow_failure: true
   needs:
-    - azure_create_webapp
+    - azure_build_webapp
   script:
-    - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --src $WEBAPP_PATH
-  when: manual
+    - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --src /app.zip || exit 0
 
 build_api_wrapper:
   stage: azure_setup
@@ -162,4 +179,4 @@ azure_deploy_wrapper:
     - az containerapp env create --name $CONTAINER_ENV --resource-group $RESOURCE_GROUP --location $AZURE_LOCATION
     - AZURE_ACCESS_KEY="$(az storage account keys list --account-name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP | jq -r .[0].value)"
     - echo ${#AZURE_ACCESS_KEY}
-    - az containerapp up -n $WRAPPER_CONTAINER_NAME --image $CI_REGISTRY_IMAGE/api_wrapper:latest --ingress external --target-port 8080 --environment $CONTAINER_ENV --registry-server $CI_REGISTRY --registry-password $CI_REGISTRY_PASSWORD --registry-username $CI_REGISTRY_USER --env-vars COINGECKO_TOKEN=$COINGECKO_TOKEN AZURE_ACCOUNT_NAME=$STORAGE_ACCOUNT AZURE_ACCESS_KEY=$AZURE_ACCESS_KEY || exit 0
+    - az containerapp up -n $WRAPPER_CONTAINER_NAME --image $CI_REGISTRY_IMAGE/api_wrapper:latest --ingress external --target-port 8080 --environment $CONTAINER_ENV --registry-server "$CI_REGISTRY" --registry-password "$CI_REGISTRY_PASSWORD" --registry-username "$CI_REGISTRY_USER" --env-vars COINGECKO_TOKEN=$COINGECKO_TOKEN AZURE_ACCOUNT_NAME=$STORAGE_ACCOUNT AZURE_ACCESS_KEY=$AZURE_ACCESS_KEY || exit 0
