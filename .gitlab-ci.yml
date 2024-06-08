@@ -150,7 +150,7 @@ build_api_wrapper:
   script:
     - cd $WRAPPER_DIR
     - docker build -t "$CI_REGISTRY_IMAGE/api_wrapper" .
-    - docker push "$CI_REGISTRY_IMAGE/evaluation"
+    - docker push "$CI_REGISTRY_IMAGE/api_wrapper"
 
 azure_deploy_wrapper:
   stage: azure_setup
