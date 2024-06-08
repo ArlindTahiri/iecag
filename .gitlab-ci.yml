@@ -26,6 +26,19 @@ variables:
   WEBAPP_PATH:
     description: "web app path"
     value: "/path/to/app.zip"
+  CONTAINER_ENV:
+    description: "container environment"
+    value: "iecagenv"
+  AZURE_LOCATION:
+    description: "azure region to deploy to"
+    value: "eastus"
+  WRAPPER_CONTAINER_NAME:
+    description: "container name of api_wrapper"
+    value: "iecagapiwrapper"
+  WRAPPER_DIR:
+    description: "path to api_wrapper"
+    value: "./code/api_wrapper"
+
 
 stages:
   - azure_setup
@@ -126,3 +139,25 @@ azure_deploy_webapp:
   script:
     - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --src $WEBAPP_PATH
   when: manual
+
+build_api_wrapper:
+  stage: azure_setup
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo $CI_JOB_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    - cd $WRAPPER_DIR
+    - docker build -t "$CI_REGISTRY_IMAGE/api_wrapper" .
+    - docker push "$CI_REGISTRY_IMAGE/evaluation"
+
+azure_deploy_wrapper:
+  stage: azure_setup
+  allow_failure: true
+  needs:
+    - azure_create_datatable
+    - build_api_wrapper
+  script:
+    - az containerapp env create --name $CONTAINER_ENV --resource-group $RESOURCE_GROUP --location $AZURE_LOCATION
+    - az containerapp up -n $WRAPPER_CONTAINER_NAME --image $CI_REGISTRY_IMAGE/api_wrapper:latest --ingress external --target-port 8080 --environment $CONTAINER_ENV --registry-server $CI_REGISTRY --registry-password $CI_REGISTRY_PASSWORD --registry-username $CI_REGISTRY_USER || exit 0
