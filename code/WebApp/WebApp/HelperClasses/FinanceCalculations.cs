@@ -86,11 +86,12 @@ namespace WebApp.HelperClasses
 
 
             // PriceChart: Berechne den Wert des Portfolios für die letzten X Tage
-            // Prepare tasks to fetch historical prices for each wallet entry
+            
+            // Prepare tasks to fetch historical prices for each wallet entry and calculate the value of the wallet entry for the last X days
             var priceFetchingTasks = walletEntries.Select(async walletEntry =>
             {
                 List<KeyValuePair<DateTime, double>> historicalPricesOfCryptoCurrency = await dataFetcherService.FetchPriceOfLastXDays(walletEntry.Name, days);
-                historicalPricesOfCryptoCurrency = historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList();
+                historicalPricesOfCryptoCurrency = CalculateEntryValueForTheLastXDays(historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList(), walletEntry.Name, allTransactionsOfUser, days);
                 return historicalPricesOfCryptoCurrency;
             });
 
