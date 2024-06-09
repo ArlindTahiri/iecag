@@ -12,6 +12,7 @@
 @inject TransactionService transactionService;
 @inject DataFetcherService dataFetcherService;
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Diagnostics
 @using WebApp.Models.ViewModels;
 
 
@@ -20,7 +21,7 @@
 <h3>Wallet</h3>
 
 <div style="display:flex;">
-    <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" Width="70vw" Height="30vh" />
+    <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" Width="70vw" Height="30vh" TimeRangeChanged="OnTimeRangeChanged" />
 
     <DoughnutChart Name="DoughnutChart" DataList="dataList" @ref="doughnutChart" Width="30vw" Height="30vh" />
 </div>
@@ -207,6 +208,7 @@
     private string transactionType = "Buy";
     private string username;
     private string? errorMessage;
+    private int lastSelecteddays = 180;
 
     [SupplyParameterFromForm]
     public TransactionModel transaction { get; set; } = new();
@@ -238,73 +240,16 @@
 
         List<Transaction> allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
 
-        // Erstelle Empty WalletEntries nur mit dem Namen
-        walletEntries = allTransactionsOfUser
-            .Select(transaction => transaction.coin)
-            .Distinct()
-            .Select(name => new WalletEntry { Name = name })
-            .ToList();
 
-
-        // Berechne den durchschnittlichen Kaufpreis und die Anzahl der Cryptocurrency für jede WalletEntry
-        foreach (var walletEntry in walletEntries)
-        {
-            var AlltransactionsOfCurrency = allTransactionsOfUser
-                .Where(transaction => transaction.coin == walletEntry.Name)
-                .OrderBy(t => t.TransactionDate)
-                .ToList();
-
-            walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.amount : -transaction.amount);
-
-            // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
-            if (walletEntry.Amount > 0)
-            {
-                // Setze den durchschnittlichen Kaufpreis
-                walletEntry.AveragePrice = HelperClasses.FinanceCalculations.CalculateAveragePrice(AlltransactionsOfCurrency);
-            }
-        }
-
-        foreach (var walletEntry in walletEntries)
-        {
-            List<KeyValuePair<DateTime,double>> historicalPricesOfCryptoCurrency = await dataFetcherService.FetchPriceOfLast180Days(walletEntry.Name);
-
-            historicalPricesOfCryptoCurrency = historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList();
-
-            historicalPricesOfCryptoCurrency = HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(historicalPricesOfCryptoCurrency, walletEntry.Name, allTransactionsOfUser, 180);
-
-            // now add values to priceList
-            if (priceList.Count == 0)
-            {
-                priceList = historicalPricesOfCryptoCurrency;
-            }
-            else
-            {
-                for (int j = 0; j < priceList.Count; j++)
-                {
-                    priceList[j] = new KeyValuePair<DateTime, double>(priceList[j].Key, priceList[j].Value + historicalPricesOfCryptoCurrency[j].Value);
-                }
-            }
-        }
-
-        List<CoinPrice> coinPrices = await dataFetcherService.FetchAllCurrentPrices();
-
-        foreach(var walletEntry in walletEntries)
-        {
-            var coinPrice = coinPrices.FirstOrDefault(cp => cp.PartitionKey == walletEntry.Name);
-            if (coinPrice != null)
-            {
-                walletEntry.CurrentPrice = coinPrice.price;
-            }
-        }
-
-        foreach (var walletEntry in walletEntries)
-        {
-            dataList.Add(new KeyValuePair<string,double>(walletEntry.Name,walletEntry.CurrentPrice * walletEntry.Amount));
-        }
+        Stopwatch stopwatch = new Stopwatch();
+        stopwatch.Start();
+        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allTransactionsOfUser, lastSelecteddays);
+        stopwatch.Stop();
+        Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed.TotalMilliseconds);
 
         await priceChart.UpdateChart();
         await doughnutChart.UpdateChart();
-
+        StateHasChanged();
 
 
         hubConnection = new HubConnectionBuilder()
@@ -359,41 +304,11 @@
         }
         await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, transaction.TransactionDate, transactionType);
 
-        if (walletEntry != null)
-        {
-            if (transactionType == "Buy")
-            {
-                // Berechne den neuen durchschnittlichen Kaufpreis
-                var totalCost = (walletEntry.Amount * walletEntry.AveragePrice) + (transaction.Amount * transaction.AveragePrice);
-                walletEntry.Amount += transaction.Amount;
-                walletEntry.AveragePrice = totalCost / walletEntry.Amount;
-            }
-            else if (transactionType == "Sell")
-            {
-                walletEntry.Amount -= transaction.Amount;
-                if (walletEntry.Amount < 0)
-                {
-                    walletEntry.Amount = 0;
-                }
-            }
-        }
-        else if (transactionType == "Buy") // Neuen Eintrag nur bei Kauf hinzufügen
-        {
-            walletEntries.Add(new WalletEntry
-                {
-                    Name = transaction.SelectedCryptocurrency,
-                    Amount = transaction.Amount,
-                    AveragePrice = transaction.AveragePrice,
-                    CurrentPrice = await dataFetcherService.FetchCurrentPrice(transaction.SelectedCryptocurrency) // Oder den aktuellen Preis setzen, wenn verfügbar
-                });
-        }
+        
+        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, await transactionService.FetchAllTransactionsOfPerson(username), lastSelecteddays);
+        
 
-        // Aktualisieren der Diagramme
-        dataList.Clear();
-        foreach (var walletEntryDoughnutChart in walletEntries)
-        {
-            dataList.Add(new KeyValuePair<string, double>(walletEntryDoughnutChart.Name, walletEntryDoughnutChart.CurrentPrice * walletEntryDoughnutChart.Amount));
-        }
+        await priceChart.UpdateChart();
         await doughnutChart.UpdateChart();
 
 
@@ -403,6 +318,14 @@
         transaction = new TransactionModel();
 
         // Aktualisieren der Ansicht
+        StateHasChanged();
+    }
+
+    private async Task OnTimeRangeChanged(int days)
+    {
+        lastSelecteddays = days;
+        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, await transactionService.FetchAllTransactionsOfPerson(username), days);
+        await priceChart.UpdateChart();
         StateHasChanged();
     }
 

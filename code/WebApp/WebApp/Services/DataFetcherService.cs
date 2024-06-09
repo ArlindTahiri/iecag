@@ -120,7 +120,28 @@ namespace WebApp.Services
             }
             return prices;
         }
-        
+
+        public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLastXDays(string coin, int days)
+        {
+            if (days == 7)
+            {
+                return await FetchPriceOfLast7Days(coin);
+            }
+            else if (days == 30)
+            {
+                return await FetchPriceOfLast30Days(coin);
+            }
+            else if (days == 180)
+            {
+                return await FetchPriceOfLast180Days(coin);
+            }
+            else
+            {
+                return new List<KeyValuePair<DateTime, double>>();
+            }
+        }
+
+
 
         public async Task FetchPriceFromBackend(string url, string name)
         {
