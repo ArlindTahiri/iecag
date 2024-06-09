@@ -351,6 +351,12 @@
             errorMessage = "You don't have enough of this cryptocurrency to sell";
             return;
         }
+        if (string.IsNullOrWhiteSpace(walletFormModel.WalletName))
+        {
+            errorMessage = "Please select a wallet";
+            return;
+        }
+
         await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, transaction.TransactionDate, transactionType, selectedWallet);
 
         var allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
