@@ -92,14 +92,20 @@ namespace WebApp.HelperClasses
 
             // Aggregate fetched prices into priceList
             priceList.Clear();
-            foreach (var pricesOfCryptoCurrency in fetchedPrices)
+            if (fetchedPrices.Length > 0)
             {
-                if (priceList.Count == 0)
+                // Initialize priceList with the first set of prices
+                priceList.AddRange(fetchedPrices[0]);
+
+                for (int i = 1; i < fetchedPrices.Length; i++)
                 {
-                    priceList.AddRange(pricesOfCryptoCurrency);
-                }
-                else
-                {
+                    var pricesOfCryptoCurrency = fetchedPrices[i];
+                    if (pricesOfCryptoCurrency.Count != priceList.Count)
+                    {
+                        // Handle the case where the counts do not match
+                        throw new InvalidOperationException("Mismatched price data lengths");
+                    }
+
                     for (int j = 0; j < priceList.Count; j++)
                     {
                         priceList[j] = new KeyValuePair<DateTime, double>(priceList[j].Key, priceList[j].Value + pricesOfCryptoCurrency[j].Value);
@@ -107,7 +113,7 @@ namespace WebApp.HelperClasses
                 }
             }
 
-            
+
             // DoughnutChart: Add the values of the Allocation list
             dataList.Clear();
             foreach (var walletEntry in walletEntries)
