@@ -46,43 +46,31 @@ namespace WebApp.HelperClasses
             // Fetch all current prices
             List<CoinPrice> coinPrices = await dataFetcherService.FetchAllCurrentPrices();
 
-            // Use ConcurrentBag to safely collect results from parallel processing
-            var results = new ConcurrentBag<Task>();
 
             // Perform calculations for each wallet entry in parallel
-            Parallel.ForEach(walletEntries, walletEntry =>
+            var tasks = walletEntries.Select(async walletEntry =>
             {
-                var task = Task.Run(() =>
+                var allTransactionsOfCurrency = allTransactionsOfUser
+                    .Where(transaction => transaction.coin == walletEntry.Name)
+                    .OrderBy(t => t.TransactionDate)
+                    .ToList();
+
+                walletEntry.Amount = allTransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.amount : -transaction.amount);
+
+                if (walletEntry.Amount > 0)
                 {
-                    var AlltransactionsOfCurrency = allTransactionsOfUser
-                        .Where(transaction => transaction.coin == walletEntry.Name)
-                        .OrderBy(t => t.TransactionDate)
-                        .ToList();
+                    walletEntry.AveragePrice = CalculateAveragePrice(allTransactionsOfCurrency);
+                }
 
-                    walletEntry.Amount = AlltransactionsOfCurrency.Sum(transaction => transaction.TransactionType == "Buy" ? transaction.amount : -transaction.amount);
-
-                    // Setze nur den durchschnittlichen Kaufpreis, wenn der Benutzer die Cryptocurrency besitzt
-                    if (walletEntry.Amount > 0)
-                    {
-                        // Setze den durchschnittlichen Kaufpreis
-                        walletEntry.AveragePrice = CalculateAveragePrice(AlltransactionsOfCurrency);
-                    }
-
-                    // Fetch current price
-                    var coinPrice = coinPrices.FirstOrDefault(cp => cp.PartitionKey == walletEntry.Name);
-                    if (coinPrice != null)
-                    {
-                        walletEntry.CurrentPrice = coinPrice.price;
-                    }
-
-                    // Return a placeholder result
-                    return 0;
-                });
-                results.Add(task);
+                var coinPrice = coinPrices.FirstOrDefault(cp => cp.PartitionKey == walletEntry.Name);
+                if (coinPrice != null)
+                {
+                    walletEntry.CurrentPrice = coinPrice.price;
+                }
             });
 
             // Wait for all tasks to complete
-            await Task.WhenAll(results);
+            await Task.WhenAll(tasks);
 
 
             // PriceChart: Berechne den Wert des Portfolios für die letzten X Tage
