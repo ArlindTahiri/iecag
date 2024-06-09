@@ -1,7 +1,8 @@
 ﻿@rendermode InteractiveServer
 
 <!-- In deiner Blazor-Komponente -->
-<div class="chart-container" style="position: relative; height:@Height; width:@Width; padding:20px; box-shadow: 0 7px 25px rgba(0,0,0,0.6); border-radius:25px; margin:10px; background: #2B3036;">
+<div class="chart-container" style="position: relative; height:@Height; width:@Width; padding:27px; box-shadow: 0 7px 25px rgba(0,0,0,0.6); border-radius:25px; margin:10px; background: #2B3036;">
+    <span class="badge text-bg-primary" style="position: absolute; top: 10px; left: 10px;">Allocation</span>
     <canvas id="@Name"></canvas>
 </div>
     
