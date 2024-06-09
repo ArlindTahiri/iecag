@@ -17,7 +17,7 @@ namespace WebApp.Services
             _tableClient.CreateIfNotExists();
         }
 
-        public async Task CreateTransactionAsync(string userId, string coin, double amount, double pricePaidAll, DateTimeOffset transactionDate, string TransactionType)
+        public async Task CreateTransactionAsync(string userId, string coin, double amount, double pricePaidAll, DateTimeOffset transactionDate, string TransactionType, string walletName)
         {
             var transaction = new Transaction
             {
@@ -28,6 +28,7 @@ namespace WebApp.Services
                 pricePaidAll = pricePaidAll,
                 TransactionDate = transactionDate,
                 TransactionType = TransactionType,
+                walletName = walletName,
                 Timestamp = DateTimeOffset.UtcNow,
                 ETag = ETag.All
             };
