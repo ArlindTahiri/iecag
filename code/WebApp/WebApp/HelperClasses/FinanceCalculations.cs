@@ -132,7 +132,7 @@ namespace WebApp.HelperClasses
             .ToList();
 
 
-            // Hier wird für die CryptoCurrency jeder Wert des Zeitstahls berechnet. Und löscht AlltransactionsOfCurrencyOfLast180Days um performanter zu sein.
+            // Hier wird für die CryptoCurrency jeder Wert des Zeitstahls berechnet. Und löscht AlltransactionsOfCurrencyOfLastXDays um performanter zu sein.
             double runningAmount = 0;
             for (int i = 0; i < historicalPricesOfCryptoCurrency.Count; i++)
             {
