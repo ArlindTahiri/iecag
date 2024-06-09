@@ -66,6 +66,18 @@
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal);
-        navigationManager.NavigateTo("/");
+        
+        // Check if ReturnUrl is present
+        if (!string.IsNullOrEmpty(HttpContext.Request.Query["ReturnUrl"]))
+        {
+            // If ReturnUrl is present, redirect to that URL
+            var returnUrl = HttpContext.Request.Query["ReturnUrl"];
+            navigationManager.NavigateTo(returnUrl);
+        }
+        else
+        {
+            // If ReturnUrl is not present, redirect to default page
+            navigationManager.NavigateTo("/");
+        }
     }
 }
