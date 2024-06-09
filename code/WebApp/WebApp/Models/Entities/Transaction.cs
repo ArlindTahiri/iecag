@@ -12,6 +12,7 @@ namespace WebApp.Models.Entities
         public double pricePaidAll { get; set; }
         public DateTimeOffset TransactionDate { get; set; }
         public string TransactionType { get; set; } // "Buy" or "Sell"
+        public string walletName { get; set; }
         public DateTimeOffset? Timestamp { get; set; }
         public ETag ETag { get; set; }
     }

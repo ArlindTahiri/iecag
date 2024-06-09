@@ -18,7 +18,22 @@
 
 <PageTitle>IeCAG - Wallet</PageTitle>
 
-<h3>Wallet</h3>
+
+
+<div class="d-flex align-items-center">
+    <div class="form-floating me-3">
+        <select class="form-select" style="width: auto;" id="selectWallet" @onchange="ChangeWallet">
+            <option value="" disabled selected>Select a wallet</option>
+            @foreach (var wallet in wallets)
+            {
+                <option value="@wallet">@wallet</option>
+            }
+        </select>
+        <label for="selectWallet">Wallet</label>
+    </div>
+    
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#walletModal">Add Wallet</button>
+</div>
 
 <div style="display:flex;">
     <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" Width="70vw" Height="30vh" TimeRangeChanged="OnTimeRangeChanged" />
@@ -26,7 +41,31 @@
     <DoughnutChart Name="DoughnutChart" DataList="dataList" @ref="doughnutChart" Width="30vw" Height="30vh" />
 </div>
 
-
+<div class="modal fade" id="walletModal" tabindex="-1" aria-labelledby="walletModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="walletModalLabel">Add Wallet</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <EditForm OnValidSubmit="AddWallet" Model="@walletFormModel">
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text" id="basic-addon1">Wallet Name</span>
+                        <InputText @bind-Value="walletFormModel.WalletName" type="text" class="form-control" placeholder="Portfolio" aria-label="Wallet Name" aria-describedby="basic-addon1" />
+                    </div>
+                </div>
+                <div class="mt-3 text-center">
+                    <span class="text-danger">@errorMessageWallet</span>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
 
 
 
@@ -189,7 +228,7 @@
                 <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Click, to see details of @walletEntry.Name">
                     <td>@walletEntry.Name</td>
                     <td>@walletEntry.CurrentPrice</td>
-                    <td>@averagePrice</td>
+                    <td>@Math.Round(@averagePrice,2)</td>
                     <td style="color:@priceChangeColor">@priceChange %</td>
                     <td>@walletEntry.Amount</td>
                     <td>@Math.Round(walletEntry.Amount * walletEntry.CurrentPrice, 2)</td>
@@ -205,10 +244,15 @@
     private string transactionType = "Buy";
     private string username;
     private string? errorMessage;
+    private string? errorMessageWallet;
     private int lastSelecteddays = 180;
+    private string walletName = "";
 
     [SupplyParameterFromForm]
     public TransactionModel transaction { get; set; } = new();
+
+    private WalletFormModel walletFormModel = new WalletFormModel();
+
 
     private void selectTransactionType(string type)
     {
@@ -217,6 +261,7 @@
 
     private List<string> cryptocurrencies = new List<string>();
 
+    List<Transaction> allSelectedTransactionsOfUser = new List<Transaction>();
 
     public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>();
 
@@ -224,6 +269,8 @@
 
     private List<WalletEntry> walletEntries = new List<WalletEntry>();
 
+    private List<string> wallets = new List<string>();
+    private string selectedWallet = "";
 
     private HubConnection? hubConnection;
 
@@ -238,12 +285,14 @@
         cryptocurrencies = coinPrices.Select(coin => coin.PartitionKey).ToList();
 
 
-        List<Transaction> allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
+        var allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
+        wallets = allTransactionsOfUser.Select(transaction => transaction.walletName).Distinct().ToList();
 
+        allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
 
         Stopwatch stopwatch = new Stopwatch();
         stopwatch.Start();
-        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allTransactionsOfUser, lastSelecteddays);
+        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, lastSelecteddays);
         stopwatch.Stop();
         Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed.TotalMilliseconds);
 
@@ -302,28 +351,63 @@
             errorMessage = "You don't have enough of this cryptocurrency to sell";
             return;
         }
-        await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, transaction.TransactionDate, transactionType);
+        await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, transaction.TransactionDate, transactionType, selectedWallet);
 
-        
-        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, await transactionService.FetchAllTransactionsOfPerson(username), lastSelecteddays);
-        
+        var allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
+        allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
+        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, lastSelecteddays);
+
 
         await priceChart.UpdateChart();
         await doughnutChart.UpdateChart();
 
-     
-        await CloseModalAsync();
+        errorMessage = "";
+        await CloseModalAsync("#transactionModal");
 
         transaction = new TransactionModel();
 
         StateHasChanged();
     }
 
+    private async Task AddWallet()
+    {
+        if (wallets.Contains(walletFormModel.WalletName))
+        {
+            errorMessageWallet = "Wallet name already exists";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(walletFormModel.WalletName))
+        {
+            errorMessageWallet = "Wallet name is empty";
+            return;
+        }
+        wallets.Add(walletFormModel.WalletName);
+        errorMessageWallet = "";
+        walletFormModel = new WalletFormModel();
+        await CloseModalAsync("#walletModal");
+        StateHasChanged();
+    }
+
     private async Task OnTimeRangeChanged(int days)
     {
         lastSelecteddays = days;
-        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, await transactionService.FetchAllTransactionsOfPerson(username), days);
+        var allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
+        allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
+
+        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, days);
         await priceChart.UpdateChart();
+        StateHasChanged();
+    }
+
+    private async Task ChangeWallet(ChangeEventArgs e)
+    {
+        selectedWallet = e.Value.ToString() ;
+        var allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
+        allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
+
+        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, lastSelecteddays);
+        await priceChart.UpdateChart();
+        await doughnutChart.UpdateChart();
         StateHasChanged();
     }
 
@@ -331,8 +415,13 @@
     [Inject]
     IJSRuntime JSRuntime { get; set; }
 
-    private async Task CloseModalAsync()
+    private async Task CloseModalAsync(string id)
     {
-        await JSRuntime.InvokeVoidAsync("closeModal", "#transactionModal");
+        await JSRuntime.InvokeVoidAsync("closeModal", id);
+    }
+
+    public class WalletFormModel
+    {
+        public string WalletName { get; set; }
     }
 }
