@@ -62,7 +62,7 @@
 
         try
         {
-            // Prüfen, ob der Benutzername bereits existiert
+            // Check if the username already exists
             bool userExists = await UserService.UserExistsAsync(Model.UserName);
             if (userExists)
             {
@@ -70,13 +70,13 @@
                 return;
             }
 
-            // Benutzer erstellen
+            // Create user
             await UserService.CreateUserAsync(Model.UserName, Model.Password);
             success = true;
         }
         catch (Exception ex)
         {
-            // Fehlerbehandlung
+            // Exception-Handling
             errorMessage = $"Registration failed: {ex.Message}";
         }
         if (success)

@@ -22,7 +22,7 @@
     <tbody>
         @foreach (var priceEntry in priceEntries)
         {
-            <tr @onclick="(() => RedirectToCryptocurrency(priceEntry.PartitionKey))" style="cursor: pointer;" title="Klicken, um Details von @priceEntry.PartitionKey anzuzeigen">
+            <tr @onclick="(() => RedirectToCryptocurrency(priceEntry.PartitionKey))" style="cursor: pointer;" title="Click, to see details of @priceEntry.PartitionKey">
                 <td>@priceEntry.PartitionKey</td>
                 <td>@priceEntry.price</td>
             </tr>
@@ -36,7 +36,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-
         priceEntries = await dataFetcherService.FetchAllCurrentPrices();
         
 
@@ -50,15 +49,11 @@
             var existingEntry = priceEntries.FirstOrDefault(entry => entry.PartitionKey == name);
             if (existingEntry != null)
             {
-                existingEntry.price = price; // Aktualisiere den Preis des vorhandenen Eintrags
-                if (name.Equals("Bitcoin"))
-                {
-                    //await priceChart.UpdateChart(DateTime.Now, (decimal)price);
-                }
+                existingEntry.price = price; // Update the price of the existing entry
             }
             else
             {
-                priceEntries.Add(new CoinPrice { PartitionKey = name, price = price }); // Füge einen neuen Eintrag hinzu, wenn das Name noch nicht vorhanden ist
+                priceEntries.Add(new CoinPrice { PartitionKey = name, price = price }); // Add a new entry, if the name does not exist
             }
             InvokeAsync(StateHasChanged);
         });
@@ -68,6 +63,7 @@
 
     public bool IsConnected =>
         hubConnection?.State == HubConnectionState.Connected;
+
 
     public async ValueTask DisposeAsync()
     {

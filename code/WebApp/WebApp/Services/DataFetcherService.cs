@@ -57,7 +57,7 @@ namespace WebApp.Services
         
         public async Task FetchCurrentPricesFromAzureTable()
         {
-            // Lade alle Einträge aus der Tabelle
+            // Load all current prices from the Azure Table and send them to all clients
             await foreach (var entity in _tableClientCurrentPrices.QueryAsync<TableEntity>())
             {
                 await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", entity.PartitionKey, entity["price"]);
@@ -87,7 +87,6 @@ namespace WebApp.Services
             {
                 return 0;
             }
-            
         }
         
 
@@ -198,7 +197,7 @@ namespace WebApp.Services
             public decimal? eur { get; set; }
         }
 
-        // Methode zum Stoppen des Timers, wenn die Anwendung heruntergefahren wird
+        // Methode to stop the timer when the application is stopped
         public void StopTimer()
         {
             lock (_lock)

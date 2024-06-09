@@ -32,14 +32,12 @@
 
 <hr />
 <br />
-<!-- Button trigger modal -->
 <div class="d-flex justify-content-end">
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transactionModal">
         Add Transaction
     </button>
 </div>
 
-<!-- Modal -->
 <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -147,7 +145,6 @@
             var event = new Event("change");
             document.getElementById("pricePaidAll").dispatchEvent(event);
         }
-        
     }
 
     function calculateAveragePrice() {
@@ -169,7 +166,6 @@
             modalInstance.hide();
         }
     }
-
 </script>
 
 <div style="overflow-x: auto; overflow-y: hidden;">
@@ -177,11 +173,11 @@
         <thead>
             <tr>
                 <th>Cryptocurrency</th>
-                <th>Derzeitiger Price</th>
-                <th>Durchschnittkaufpreis</th>
+                <th>Current Price</th>
+                <th>Average</th>
                 <th>% value Change</th>
-                <th>Anzahl von Cryptocurrency</th>
-                <th>Gesamter Wert</th>
+                <th>Amount</th>
+                <th>Total Value</th>
             </tr>
         </thead>
         <tbody>
@@ -189,11 +185,12 @@
             {
                 var averagePrice = walletEntry.AveragePrice;
                 var priceChange = Math.Round(((walletEntry.CurrentPrice - averagePrice) / averagePrice) * 100, 2);
-                <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Klicken, um Details von @walletEntry.Name anzuzeigen">
+                var priceChangeColor = priceChange >= 0 ? "green" : "red";
+                <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Click, to see details of @walletEntry.Name">
                     <td>@walletEntry.Name</td>
                     <td>@walletEntry.CurrentPrice</td>
                     <td>@averagePrice</td>
-                    <td>@priceChange %</td>
+                    <td style="color:@priceChangeColor">@priceChange %</td>
                     <td>@walletEntry.Amount</td>
                     <td>@Math.Round(walletEntry.Amount * walletEntry.CurrentPrice, 2)</td>
                 </tr>
@@ -218,7 +215,7 @@
         transactionType = type;
     }
 
-    private List<string> cryptocurrencies = new List<string> { "Bitcoin", "Ethereum", "Cronos" }; // Beispielhafte Liste
+    private List<string> cryptocurrencies = new List<string>();
 
 
     public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>();
@@ -236,6 +233,9 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         username = user.Identity?.Name;
+
+        List<CoinPrice> coinPrices = await dataFetcherService.FetchAllCurrentPrices();
+        cryptocurrencies = coinPrices.Select(coin => coin.PartitionKey).ToList();
 
 
         List<Transaction> allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
@@ -261,7 +261,7 @@
             var existingEntry = walletEntries.FirstOrDefault(entry => entry.Name == name);
             if (existingEntry != null)
             {
-                existingEntry.CurrentPrice = price; // Aktualisiere den Preis des vorhandenen Eintrags
+                existingEntry.CurrentPrice = price; // Update the price of the existing entry
                 double allValue = walletEntries.Sum(entry => entry.Amount * entry.CurrentPrice);
                 await priceChart.UpdateChart(DateTime.Now, allValue);
                 await doughnutChart.UpdateChart(name, existingEntry.CurrentPrice * existingEntry.Amount);
@@ -311,13 +311,11 @@
         await priceChart.UpdateChart();
         await doughnutChart.UpdateChart();
 
-
-        // Schließen des Modals        
+     
         await CloseModalAsync();
 
         transaction = new TransactionModel();
 
-        // Aktualisieren der Ansicht
         StateHasChanged();
     }
 
@@ -330,7 +328,6 @@
     }
 
 
-    // JavaScript Interop zum Schließen des Modals
     [Inject]
     IJSRuntime JSRuntime { get; set; }
 

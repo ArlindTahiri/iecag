@@ -1,6 +1,5 @@
 ﻿@rendermode InteractiveServer
 
-<!-- In deiner Blazor-Komponente -->
 <div class="chart-container" style="position: relative; height:@Height; width:@Width; padding:27px; box-shadow: 0 7px 25px rgba(0,0,0,0.6); border-radius:25px; margin:10px; background: #2B3036;">
     <span class="badge text-bg-primary" style="position: absolute; top: 10px; left: 10px;">Allocation</span>
     <canvas id="@Name"></canvas>
@@ -12,7 +11,7 @@
     var DoughnutChart;
     createDoughnutChart = (chartID, labels, data) => {
         DoughnutChart = new Chart(document.getElementById(chartID), {
-            type: 'doughnut', // Typ auf 'doughnut' geändert
+            type: 'doughnut',
             data: {
                 labels: labels,
                 datasets: [{
@@ -54,7 +53,7 @@
             });
             DoughnutChart.update();
         } catch (error) {
-            console.error('An error occurred in updateDoughnutChart function:', error); // Fehlermeldung in der Konsole anzeigen
+            console.error('An error occurred in updateDoughnutChart function:', error);
         }
     };
 
@@ -88,21 +87,21 @@
 
     public async Task UpdateChart(string label, double value)
     {
-        // Füge den neuen Datenpunkt hinzu oder aktualisiere den vorhandenen
+        // Add the new data point or update the existing one
         var existingData = DataList.FirstOrDefault(kv => kv.Key == label);
         if (!existingData.Equals(default(KeyValuePair<string, double>)))
         {
-            // Aktualisiere den vorhandenen Datenpunkt
+            // Update the existing data point
             DataList.Remove(existingData);
             DataList.Add(new KeyValuePair<string, double>(label, value));
         }
         else
         {
-            // Füge einen neuen Datenpunkt hinzu
+            // Add a new data point
             DataList.Add(new KeyValuePair<string, double>(label, value));
         }
 
-        // Erstelle ein neues Diagramm mit den aktualisierten Daten
+        // Create a new chart with the updated data
         await JSRuntime.InvokeVoidAsync("updateDoughnutChartWithValue", label, value);
     }
 
@@ -125,10 +124,10 @@
         get => _name;
         set
         {
-            // Überprüfe, ob der Wert nicht leer ist
+            // Check if the value is not empty
             if (!string.IsNullOrEmpty(value))
             {
-                // Setze den Wert und füge "doughnutChart[]" hinzu
+                // Set the value and add "doughnutChart[]" to it
                 _name = $"doughnutChart{value}";
             }
         }

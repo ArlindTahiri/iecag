@@ -8,8 +8,6 @@ namespace WebApp.Models.Entities
         public string PartitionKey { get; set; }
         public string RowKey { get; set; }
         public double price { get; set; }
-
-        // ITableEntity members
         public DateTimeOffset? Timestamp { get; set; }
         public ETag ETag { get; set; }
     }

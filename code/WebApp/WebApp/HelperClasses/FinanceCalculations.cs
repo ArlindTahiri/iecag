@@ -20,10 +20,10 @@ namespace WebApp.HelperClasses
                 }
                 else if (transaction.TransactionType == "Sell")
                 {
-                    // Berechne den durchschnittlichen Kaufpreis vor dem Verkauf
+                    // Calculate the average buy price before the sale
                     double averageBuyPrice = totalCost / totalAmount;
 
-                    // Reduziere die Kosten um den Verkaufspreis
+                    // reduce the total cost by the average price
                     totalCost -= transaction.amount * averageBuyPrice;
                     totalAmount -= transaction.amount;
                 }
@@ -35,7 +35,8 @@ namespace WebApp.HelperClasses
         public async static Task CalculatePortfolioValueForTheLastXDays(DataFetcherService dataFetcherService,List<WalletEntry> walletEntries, List<KeyValuePair<DateTime, double>> priceList, List<KeyValuePair<string, double>> dataList, List<Transaction> allTransactionsOfUser, int days)
         {
             walletEntries.Clear();
-            // Erstelle Empty WalletEntries nur mit dem Namen
+
+            // Fetch all unique coins of the user
             var newWalletEntries = allTransactionsOfUser
                 .Select(transaction => transaction.coin)
                 .Distinct()
@@ -72,9 +73,12 @@ namespace WebApp.HelperClasses
             // Wait for all tasks to complete
             await Task.WhenAll(tasks);
 
+            var orderedEntries = walletEntries.OrderByDescending(w => w.Amount * w.CurrentPrice).ToList();
+            walletEntries.Clear();
+            walletEntries.AddRange(orderedEntries);
 
-            // PriceChart: Berechne den Wert des Portfolios für die letzten X Tage
-            
+            // PriceChart: Fetch historical prices for each wallet entry and calculate the value of the wallet entry for the last X days
+
             // Prepare tasks to fetch historical prices for each wallet entry and calculate the value of the wallet entry for the last X days
             var priceFetchingTasks = walletEntries.Select(async walletEntry =>
             {
@@ -103,8 +107,8 @@ namespace WebApp.HelperClasses
                 }
             }
 
-
-            // DoughnutChat: Füge die Werte der Allocation Liste hinzu
+            
+            // DoughnutChart: Add the values of the Allocation list
             dataList.Clear();
             foreach (var walletEntry in walletEntries)
             {
@@ -120,13 +124,14 @@ namespace WebApp.HelperClasses
             .ToList();
 
 
-            // Hier wird für die CryptoCurrency jeder Wert des Zeitstahls berechnet. Und löscht AlltransactionsOfCurrencyOfLastXDays um performanter zu sein.
+
+            // Here, for the CryptoCurrency, every value of the timestamp is calculated. And deletes AlltransactionsOfCurrencyOfLastXDays to be more performant.
             double runningAmount = 0;
             for (int i = 0; i < historicalPricesOfCryptoCurrency.Count; i++)
             {
                 var date = historicalPricesOfCryptoCurrency[i].Key;
 
-                // Aktualisiere runningAmount basierend auf Transaktionen bis zum aktuellen historischen Preisdatum
+                // Update runningAmount based on transactions until the current historical price date
                 while (AlltransactionsOfCurrencyOfLastXDays.Count > 0 && AlltransactionsOfCurrencyOfLastXDays[0].TransactionDate <= date)
                 {
                     var transaction = AlltransactionsOfCurrencyOfLastXDays[0];

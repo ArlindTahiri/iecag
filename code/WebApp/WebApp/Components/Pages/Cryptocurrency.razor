@@ -19,7 +19,6 @@
 
     public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>();
 
-
     protected override async Task OnInitializedAsync()
     {
         Price = await dataFetcherService.FetchCurrentPrice(Name);
@@ -48,9 +47,6 @@
         await priceChart.UpdateChart();
     }
 
-    public bool IsConnected =>
-        hubConnection?.State == HubConnectionState.Connected;
-
     public async ValueTask DisposeAsync()
     {
         if (hubConnection is not null)
@@ -58,6 +54,4 @@
             await hubConnection.DisposeAsync();
         }
     }
-
-
 }

@@ -48,7 +48,6 @@
     };
 
     updatePriceChart = (labels, newData) => {
-        console.log('addData function is executing.'); // Log für Ausführung der Funktion
         try {
             PriceChart.data.labels = labels;
             PriceChart.data.datasets.forEach((dataset) => {
@@ -56,7 +55,7 @@
             });
             PriceChart.update();
         } catch (error) {
-            console.error('An error occurred in updatePriceChart function:', error); // Fehlermeldung in der Konsole anzeigen
+            console.error('An error occurred in updatePriceChart function:', error);
         }
     }
 
@@ -79,7 +78,7 @@
     {
         var interval = GetIntervalForTimeRange(_timeRangeInDays);
 
-        // Füge den neuen Datenpunkt hinzu oder überschreibe den letzten Wert
+        // Add the new data point or overwrite the last value
         if (pricesList.Count > 0 && dateTime.Subtract(pricesList.Last().Key).TotalMinutes < interval)
         {
             pricesList[pricesList.Count - 1] = new KeyValuePair<DateTime, double>(pricesList.Last().Key, price);
@@ -89,7 +88,7 @@
             pricesList.Add(new KeyValuePair<DateTime, double>(dateTime, price));
         }
 
-        // Erstelle ein neues Diagramm mit den aktualisierten Preisen
+        // Create a new chart with the updated prices
         await JSRuntime.InvokeVoidAsync("updatePriceChart", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
     }
 
@@ -105,10 +104,10 @@
     {
         return days switch
         {
-            7 => 30,       // 30 Minuten
-            30 => 120,     // 2 Stunden
-            180 => 720,    // 12 Stunden
-            _ => 30        // Default 30 Minuten
+            7 => 30,       // 30 minutes
+            30 => 120,     // 2 hours
+            180 => 720,    // 12 hours
+            _ => 30        // Default 30 minutes
         };
     }
 
@@ -130,10 +129,10 @@
         get => _name;
         set
         {
-            // Überprüfe, ob der Wert nicht leer ist
+            // Check if the value is not empty
             if (!string.IsNullOrEmpty(value))
             {
-                // Setze den Wert und füge "priceChart[]" hinzu
+                // Set the value and add "priceChart[]" to it
                 _name = $"priceChart{value}";
             }
         }
