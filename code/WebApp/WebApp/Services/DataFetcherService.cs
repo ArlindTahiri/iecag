@@ -34,7 +34,7 @@ namespace WebApp.Services
             _tableClientPriceHistory30Days.CreateIfNotExists();
             _tableClientPriceHistory180Days = serviceClient.GetTableClient("pricehistory180days");
             _tableClientPriceHistory180Days.CreateIfNotExists();
-            
+
             _httpClient = httpClient;
             _hubContext = hubContext;
             _timer = new Timer(TimerCallback, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
@@ -93,30 +93,34 @@ namespace WebApp.Services
         public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast180Days(string coin)
         {
             List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
-            await foreach (var entity in _tableClientPriceHistory180Days.QueryAsync<CoinPrice>($"coin eq '{coin}'"))
+            await foreach (var entity in _tableClientPriceHistory180Days.QueryAsync<CoinPrice>($"PartitionKey eq '{coin}'"))
             {
-                prices.Add(new KeyValuePair<DateTime, double>(entity.Timestamp.Value.DateTime, entity.price));
+                prices.Add(new KeyValuePair<DateTime, double>(entity.PriceDate.DateTime, entity.price));
             }
+            prices = prices.OrderBy(x => x.Key).ToList();
             return prices;
         }
 
         public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast30Days(string coin)
         {
             List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
-            await foreach (var entity in _tableClientPriceHistory30Days.QueryAsync<CoinPrice>($"coin eq '{coin}'"))
+            await foreach (var entity in _tableClientPriceHistory30Days.QueryAsync<CoinPrice>($"PartitionKey eq '{coin}'"))
             {
-                prices.Add(new KeyValuePair<DateTime, double>(entity.Timestamp.Value.DateTime, entity.price));
+                prices.Add(new KeyValuePair<DateTime, double>(entity.PriceDate.DateTime, entity.price));
             }
+            prices = prices.OrderBy(x => x.Key).ToList();
             return prices;
         }
 
         public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast7Days(string coin)
         {
             List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
-            await foreach (var entity in _tableClientPriceHistory7Days.QueryAsync<CoinPrice>($"coin eq '{coin}'"))
+            await foreach (var entity in _tableClientPriceHistory7Days.QueryAsync<CoinPrice>($"PartitionKey eq '{coin}'"))
             {
-                prices.Add(new KeyValuePair<DateTime, double>(entity.Timestamp.Value.DateTime, entity.price));
+                prices.Add(new KeyValuePair<DateTime, double>(entity.PriceDate.DateTime, entity.price));
             }
+
+            prices = prices.OrderBy(x => x.Key).ToList();
             return prices;
         }
 

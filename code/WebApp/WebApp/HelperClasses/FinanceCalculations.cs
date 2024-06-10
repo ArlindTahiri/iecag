@@ -77,43 +77,64 @@ namespace WebApp.HelperClasses
             walletEntries.Clear();
             walletEntries.AddRange(orderedEntries);
 
+
             // PriceChart: Fetch historical prices for each wallet entry and calculate the value of the wallet entry for the last X days
-
-            // Prepare tasks to fetch historical prices for each wallet entry and calculate the value of the wallet entry for the last X days
-            var priceFetchingTasks = walletEntries.Select(async walletEntry =>
-            {
-                List<KeyValuePair<DateTime, double>> historicalPricesOfCryptoCurrency = await dataFetcherService.FetchPriceOfLastXDays(walletEntry.Name, days);
-                historicalPricesOfCryptoCurrency = CalculateEntryValueForTheLastXDays(historicalPricesOfCryptoCurrency.OrderBy(h => h.Key).ToList(), walletEntry.Name, allTransactionsOfUser, days);
-                return historicalPricesOfCryptoCurrency;
-            });
-
-            // Wait for all tasks to complete and collect results
-            var fetchedPrices = await Task.WhenAll(priceFetchingTasks);
-
-            // Aggregate fetched prices into priceList
+            var tolerance = TimeSpan.FromMinutes(1);
+            var aggregatedPriceList = await FetchAndAggregatePricesAsync(walletEntries, days, dataFetcherService, tolerance, allTransactionsOfUser);
             priceList.Clear();
-            foreach (var pricesOfCryptoCurrency in fetchedPrices)
-            {
-                if (priceList.Count == 0)
-                {
-                    priceList.AddRange(pricesOfCryptoCurrency);
-                }
-                else
-                {
-                    for (int j = 0; j < priceList.Count; j++)
-                    {
-                        priceList[j] = new KeyValuePair<DateTime, double>(priceList[j].Key, priceList[j].Value + pricesOfCryptoCurrency[j].Value);
-                    }
-                }
-            }
+            priceList.AddRange(aggregatedPriceList);
 
-            
+
             // DoughnutChart: Add the values of the Allocation list
             dataList.Clear();
             foreach (var walletEntry in walletEntries)
             {
                 dataList.Add(new KeyValuePair<string, double>(walletEntry.Name, walletEntry.CurrentPrice * walletEntry.Amount));
             }
+        }
+
+        public async static Task<List<KeyValuePair<DateTime, double>>> FetchAndAggregatePricesAsync(
+    List<WalletEntry> walletEntries, int days, DataFetcherService dataFetcherService, TimeSpan tolerance, List<Transaction> allTransactionsOfUser)
+        {
+            var priceFetchingTasks = walletEntries.Select(async walletEntry =>
+            {
+                var historicalPrices = await dataFetcherService.FetchPriceOfLastXDays(walletEntry.Name, days);
+                return CalculateEntryValueForTheLastXDays(historicalPrices.OrderBy(h => h.Key).ToList(), walletEntry.Name, allTransactionsOfUser, days);
+            });
+
+            var fetchedPrices = await Task.WhenAll(priceFetchingTasks);
+
+            return AggregatePrices(fetchedPrices.ToList(), tolerance);
+        }
+
+        public static List<KeyValuePair<DateTime, double>> AggregatePrices(
+    List<List<KeyValuePair<DateTime, double>>> priceLists, TimeSpan tolerance)
+        {
+            // Use a sorted dictionary to maintain the order and fast lookup
+            var aggregatedPrices = new SortedDictionary<DateTime, double>();
+
+            foreach (var priceList in priceLists)
+            {
+                foreach (var price in priceList)
+                {
+                    var closeDate = aggregatedPrices.Keys.FirstOrDefault(existingDate => AreDatesClose(existingDate, price.Key, tolerance));
+                    if (closeDate != default)
+                    {
+                        aggregatedPrices[closeDate] += price.Value;
+                    }
+                    else
+                    {
+                        aggregatedPrices[price.Key] = price.Value;
+                    }
+                }
+            }
+
+            return aggregatedPrices.ToList();
+        }
+
+        public static bool AreDatesClose(DateTime date1, DateTime date2, TimeSpan tolerance)
+        {
+            return Math.Abs((date1 - date2).TotalSeconds) <= tolerance.TotalSeconds;
         }
 
         public static List<KeyValuePair<DateTime, double>> CalculateEntryValueForTheLastXDays(List<KeyValuePair<DateTime, double>> historicalPricesOfCryptoCurrency, string CryptcurrencyName, List<Transaction> allTransactionsOfUser, int days)
