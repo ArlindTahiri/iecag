@@ -246,7 +246,6 @@
     private string? errorMessage;
     private string? errorMessageWallet;
     private int lastSelecteddays = 180;
-    private string walletName = "";
 
     [SupplyParameterFromForm]
     public TransactionModel transaction { get; set; } = new();
@@ -351,7 +350,7 @@
             errorMessage = "You don't have enough of this cryptocurrency to sell";
             return;
         }
-        if (string.IsNullOrWhiteSpace(walletFormModel.WalletName))
+        if (string.IsNullOrWhiteSpace(selectedWallet))
         {
             errorMessage = "Please select a wallet";
             return;
