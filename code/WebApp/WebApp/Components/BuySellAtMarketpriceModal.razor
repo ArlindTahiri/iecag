@@ -1,0 +1,103 @@
+﻿@rendermode InteractiveServer
+
+<div class="modal fade" id="BuySellMarketPriceModal" tabindex="-1" aria-labelledby="BuySellMarketPriceModal" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="BuySellMarketPriceModalLabel">Buy Sell Cryptocurrency</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <EditForm Model="@transaction" OnValidSubmit="AddTransaction" FormName="AddTransaction">
+                <DataAnnotationsValidator />
+                <div class="modal-body">
+                    <ul class="nav nav-pills nav-fill">
+                        <li class="nav-item">
+                            <button type="button" class="nav-link @(transactionType == "Buy" ? "active" : "")" aria-current="page" @onclick='(() => selectTransactionType("Buy"))'>Buy</button>
+                        </li>
+                        <li class="nav-item">
+                            <button type="button" class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick='(() => selectTransactionType("Sell"))'>Sell</button>
+                        </li>
+                    </ul>
+
+                    <div class="mt-4">
+                        <label>Select Cryptocurrency</label>
+                        <InputSelect @bind-Value="transaction.SelectedCryptocurrency" class="form-select mt-1" id="selectCryptocurrency">
+                            <option value="" disabled selected>Select a cryptocurrency</option>
+                            @foreach (var crypto in cryptocurrencies)
+                            {
+                                <option value="@crypto">@crypto</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => transaction.SelectedCryptocurrency" />
+                    </div>
+
+                    <div class="mt-3">
+                        <label>Amount</label>
+                        <InputNumber @bind-Value="transaction.Amount" class="form-control mt-1" id="amount" oninput="calculatePricePaidAllOrAveragePrice()" />
+                        <ValidationMessage For="() => transaction.Amount" />
+                    </div>
+
+                    <div class="mt-3 row">
+                        <div class="col">
+                            <label>Average Price</label>
+                            <InputNumber @bind-Value="transaction.AveragePrice" class="form-control mt-1" id="averagePrice" oninput="calculatePricePaidAll()" />
+                            <ValidationMessage For="() => transaction.AveragePrice" />
+                        </div>
+
+                        <div class="col">
+                            <label>Price Paid All</label>
+                            <InputNumber @bind-Value="transaction.PricePaidAll" class="form-control mt-1" id="pricePaidAll" oninput="calculateAveragePrice()" />
+                            <ValidationMessage For="() => transaction.PricePaidAll" />
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label>Transaction Date</label>
+                        <InputDate @bind-Value="transaction.TransactionDate" class="form-control mt-1" id="transactionDate" />
+                        <ValidationMessage For="() => transaction.TransactionDate" />
+                    </div>
+
+                    <div class="mt-3 text-center">
+                        <span class="text-danger">@errorMessage</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+<script>
+    function closeModal(modalId) {
+        const modalElement = document.querySelector(modalId);
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    }
+</script>
+
+@code {
+    [SupplyParameterFromForm]
+    public TransactionModel transaction { get; set; } = new();
+
+    [Parameter]
+    public List<string> cryptocurrencies { get; set; } = new();
+
+    private string? errorMessage;
+
+    private string transactionType = "Buy";
+
+    private async Task AddTransaction()
+    {
+    }
+
+    private void selectTransactionType(string type)
+    {
+        transactionType = type;
+    }
+
+}
