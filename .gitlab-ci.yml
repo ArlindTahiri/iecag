@@ -20,6 +20,9 @@ variables:
   TABLE_PRICE_HISTORY:
     description: "price history table name"
     value: "pricehistory"
+  APPSERVICE_PLAN_NAME:
+    description: "app service plan name"
+    value: "iecagAppServicePlan"
   WEBAPP_NAME:
     description: "web app name"
     value: "iecagweb"
@@ -121,14 +124,22 @@ azure_create_datatable:
     - if: '$DEPLOY == "true"'
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-azure_create_webapp:
+azure_create_appserviceplan:
   stage: azure_setup
   allow_failure: true
   needs:
     - azure_create_datatable
   script:
+    - az appservice plan create --name $APPSERVICE_PLAN_NAME --resource-group $RESOURCE_GROUP --sku F1 || exit 0
+
+azure_create_webapp:
+  stage: azure_setup
+  allow_failure: true
+  needs:
+    - azure_create_appserviceplan
+  script:
     - STORAGE_CONNECTION_STRING=$(az storage account show-connection-string --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query connectionString -o tsv)
-    - az webapp create --resource-group $RESOURCE_GROUP --plan AppServicePlan --name $WEBAPP_NAME --runtime "DOTNET|8.0" || exit 0
+    - az webapp create --resource-group $RESOURCE_GROUP --plan $APPSERVICE_PLAN_NAME --name $WEBAPP_NAME --runtime "DOTNET|8.0" || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --settings AzureTable=$STORAGE_CONNECTION_STRING || exit 0
 
 azure_build_webapp:
