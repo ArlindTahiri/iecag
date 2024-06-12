@@ -1,4 +1,5 @@
 ﻿@rendermode InteractiveServer
+@inject TransactionService transactionService
 
 <div class="modal fade" id="BuySellMarketPriceModal" tabindex="-1" aria-labelledby="BuySellMarketPriceModal" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -70,29 +71,52 @@
     </div>
 </div>
 
-<script>
-    function closeModal(modalId) {
-        const modalElement = document.querySelector(modalId);
-        const modalInstance = bootstrap.Modal.getInstance(modalElement);
-        if (modalInstance) {
-            modalInstance.hide();
-        }
-    }
-</script>
 
 @code {
     [SupplyParameterFromForm]
     public TransactionModel transaction { get; set; } = new();
 
     [Parameter]
+    public List<WalletEntry> walletEntries { get; set; } = new List<WalletEntry>();
+
+    [Parameter]
+    public string selectedWallet { get; set; } = "";
+
+    [Parameter]
+    public string username { get; set; } = "";
+
     public List<string> cryptocurrencies { get; set; } = new();
 
     private string? errorMessage;
 
     private string transactionType = "Buy";
 
+
     private async Task AddTransaction()
     {
+        var walletEntry = walletEntries.FirstOrDefault(sp => sp.Name == transaction.SelectedCryptocurrency);
+        if (walletEntry == null && transactionType == "Sell")
+        {
+            errorMessage = "You don't have any of this cryptocurrency to sell";
+            return;
+        }
+        if (walletEntry != null && walletEntry.Amount < transaction.Amount && transactionType == "Sell")
+        {
+            errorMessage = "You don't have enough of this cryptocurrency to sell";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(selectedWallet))
+        {
+            errorMessage = "Please select a wallet";
+            return;
+        }
+
+        await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, DateTimeOffset.UtcNow, transactionType, selectedWallet);
+
+        
+        //await CloseModalAsync("#transactionModal");
+
+        transaction = new TransactionModel();
     }
 
     private void selectTransactionType(string type)
