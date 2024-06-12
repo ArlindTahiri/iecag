@@ -154,13 +154,13 @@ azure_build_webapp:
     - cd code/WebApp/
     - dotnet publish -c Release -o out
     - cd out
-    - zip -r /app.zip .
+    - zip -r app.zip .
   artifacts:
     when: on_success
     access: all
     expire_in: 30 days
     paths:
-      - /app.zip
+      - code/WebApp/out/app.zip
 
 azure_deploy_webapp:
   stage: azure_setup
@@ -168,7 +168,7 @@ azure_deploy_webapp:
   needs:
     - azure_build_webapp
   script:
-    - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --src /app.zip || exit 0
+    - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --src code/WebApp/out/app.zip || exit 0
 
 build_api_wrapper:
   stage: azure_setup
