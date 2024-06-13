@@ -2,7 +2,7 @@
 @inject TransactionService transactionService
 
 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ConvertCryptoModal">
-    Buy/Sell at Market Price
+    Buy/Sell
 </button>
 
 <div class="modal fade" id="ConvertCryptoModal" tabindex="-1" aria-labelledby="ConvertCryptoModalLabel" aria-hidden="true">
@@ -129,6 +129,7 @@
 
         await TransactionAdded.InvokeAsync("#ConfirmConversionModal");
 
+        errorMessage = "";
         transaction = new TransactionModel();
     }
 
