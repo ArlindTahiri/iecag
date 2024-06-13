@@ -36,7 +36,7 @@
 </div>
 
 <div style="display:flex;">
-    <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" Width="70vw" Height="30vh" TimeRangeChanged="OnTimeRangeChanged" />
+    <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" Width="70vw" Height="30vh" TimeRangeChanged="OnTimeRangeChanged" _timeRangeInDays="lastSelecteddays"/>
 
     <DoughnutChart Name="DoughnutChart" DataList="dataList" @ref="doughnutChart" Width="30vw" Height="30vh" />
 </div>
