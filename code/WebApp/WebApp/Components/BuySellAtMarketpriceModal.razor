@@ -13,55 +13,66 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <EditForm Model="@transaction" FormName="AddTransaction">
-            <div class="modal-body">
-                <ul class="nav nav-pills nav-fill">
-                    <li class="nav-item">
-                        <button type="button" class="nav-link @(transactionType == "Buy" ? "active" : "")" @onclick='(() => selectTransactionType("Buy"))'>Buy</button>
-                    </li>
-                    <li class="nav-item">
-                        <button type="button" class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick='(() => selectTransactionType("Sell"))'>Sell</button>
-                    </li>
-                </ul>
+                <div class="modal-body">
+                    <ul class="nav nav-pills nav-fill">
+                        <li class="nav-item">
+                            <button type="button" class="nav-link @(transactionType == "Buy" ? "active" : "")" @onclick='(() => selectTransactionType("Buy"))'>Buy</button>
+                        </li>
+                        <li class="nav-item">
+                            <button type="button" class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick='(() => selectTransactionType("Sell"))'>Sell</button>
+                        </li>
+                    </ul>
 
-                <div class="mt-4">
-                    <label>Select Cryptocurrency</label>
-                    <InputSelect @bind-Value="transaction.SelectedCryptocurrency" class="form-select mt-1">
-                        <option value="" disabled selected>Select a cryptocurrency</option>
-                        @foreach (var crypto in cryptocurrencies)
-                        {
-                            <option value="@crypto">@crypto</option>
-                        }
-                    </InputSelect>
-                    <ValidationMessage For="() => transaction.SelectedCryptocurrency" />
-                </div>
+
                     @{
                         var currentPrice = coinPrices.FirstOrDefault(sp => sp.PartitionKey == transaction.SelectedCryptocurrency)?.price ?? 0.0;
-                        exchangeRate = Math.Round(1 / currentPrice,7);
+                        exchangeRate = Math.Round(1 / currentPrice, 7);
                     }
 
-                <div class="mt-3 row">
-                    <div class="col">
-                        <label>Amount in EUR</label>
-                        <InputNumber @bind-Value="transaction.PricePaidAll" class="form-control mt-1" />
-                        <ValidationMessage For="() => transaction.PricePaidAll" />
-                    </div>
+                    
 
-                    <div class="col">
-                        <label>Amount in Crypto</label>
-                        <InputNumber @bind-Value="transaction.Amount" class="form-control mt-1" />
+                    <div class="p-3 border rounded mb-3 mt-4">
+                        <div class="input-group mt-3">
+                            <InputNumber type="text" @bind-Value="transaction.PricePaidAll" class="form-control" aria-label="Amount in EUR" placeholder="0.00" />
+                            <span class="input-group-text">EUR</span>
+                        </div>
+                        <ValidationMessage For="() => transaction.PricePaidAll" />
+
+
+                        <div class="text-center my-3">
+                            <button type="button" class="btn btn-outline-secondary disabled">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-down-up" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M3.5 15a.5.5 0 0 0 .5-.5V1.707l2.646 2.647a.5.5 0 0 0 .708-.708l-3.5-3.5a.5.5 0 0 0-.708 0l-3.5 3.5a.5.5 0 0 0 .708.708L3 1.707V14.5a.5.5 0 0 0 .5.5zm9-14a.5.5 0 0 1 .5.5v12.793l2.646-2.647a.5.5 0 0 1 .708.708l-3.5 3.5a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 0 1 .708-.708L12 14.293V1.5a.5.5 0 0 1 .5-.5z" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div class="input-group mt-3">
+                            <InputNumber type="text" @bind-Value="transaction.Amount" class="form-control" aria-label="Amount in EUR" />
+                            <InputSelect @bind-Value="transaction.SelectedCryptocurrency" class="form-select">
+                                <option value="">Select a cryptocurrency</option>
+                                @foreach (var crypto in cryptocurrencies)
+                                {
+                                    <option value="@crypto" @onselect="(() => SetSelectedCryptocurrency(crypto))">@crypto</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="() => transaction.SelectedCryptocurrency" />
+                        </div>
                         <ValidationMessage For="() => transaction.Amount" />
                     </div>
+
+
+                    <div class="mt-3 d-flex justify-content-between">
+                        <label>Exchange Rate: </label>
+                        <label>1 EUR = @exchangeRate @transaction.SelectedCryptocurrency</label>
+                    </div>
                 </div>
 
-                <div class="mt-3">
-                    <label>Exchange Rate</label>
-                    <p>1 EUR = @exchangeRate @transaction.SelectedCryptocurrency</p>
-                </div>
-            </div>
+
             </EditForm>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary @(string.IsNullOrWhiteSpace(transaction.SelectedCryptocurrency) ? "disabled" : "")" data-bs-target="#ConfirmConversionModal" data-bs-toggle="modal" @onclick="TransformTransaction">Convert</button>
+                <button type="button" class="btn btn-primary @(string.IsNullOrWhiteSpace(transaction.SelectedCryptocurrency) ? "disabled" : "")" data-bs-target="#ConfirmConversionModal" data-bs-toggle="modal" @onclick="TransformTransaction">@transactionType</button>
             </div>
         </div>
     </div>
@@ -131,6 +142,11 @@
 
         errorMessage = "";
         transaction = new TransactionModel();
+    }
+
+    public void SetSelectedCryptocurrency(string crypto)
+    {
+        transaction.SelectedCryptocurrency = crypto;
     }
 
     private void TransformTransaction()
