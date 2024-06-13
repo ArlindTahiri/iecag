@@ -26,7 +26,7 @@
 
                     @{
                         var currentPrice = coinPrices.FirstOrDefault(sp => sp.PartitionKey == transaction.SelectedCryptocurrency)?.price ?? 0.0;
-                        exchangeRate = Math.Round(1 / currentPrice, 7);
+                        exchangeRate = currentPrice == 0 ? 0 : Math.Round(1 / currentPrice, 7);
                     }
 
                     
