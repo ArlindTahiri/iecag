@@ -41,6 +41,8 @@
     <DoughnutChart Name="DoughnutChart" DataList="dataList" @ref="doughnutChart" Width="30vw" Height="30vh" />
 </div>
 
+<BuySellAtMarketpriceModal TransactionAdded="UpdateCharts" coinPrices="@coinPrices" walletEntries="@walletEntries" selectedWallet="@selectedWallet" username="@username" cryptocurrencies="@cryptocurrencies" />
+
 <div class="modal fade" id="walletModal" tabindex="-1" aria-labelledby="walletModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -273,6 +275,8 @@
 
     private HubConnection? hubConnection;
 
+    public List<CoinPrice> coinPrices = new List<CoinPrice>();
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -280,7 +284,7 @@
         var user = authState.User;
         username = user.Identity?.Name;
 
-        List<CoinPrice> coinPrices = await dataFetcherService.FetchAllCurrentPrices();
+        coinPrices = await dataFetcherService.FetchAllCurrentPrices();
         cryptocurrencies = coinPrices.Select(coin => coin.PartitionKey).ToList();
 
 
@@ -314,6 +318,12 @@
                 await priceChart.UpdateChart(DateTime.Now, allValue);
                 await doughnutChart.UpdateChart(name, existingEntry.CurrentPrice * existingEntry.Amount);
             }
+            var existingCoinEntry = coinPrices.FirstOrDefault(coin => coin.PartitionKey == name);
+            if (existingCoinEntry != null)
+            {
+                existingCoinEntry.price = price;
+            }
+
             InvokeAsync(StateHasChanged);
         });
 
@@ -371,6 +381,18 @@
 
         transaction = new TransactionModel();
 
+        StateHasChanged();
+    }
+
+    private async Task UpdateCharts(string idOfModal)
+    {
+        var allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
+        allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
+        await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, lastSelecteddays);
+
+        await priceChart.UpdateChart();
+        await doughnutChart.UpdateChart();
+        await CloseModalAsync(idOfModal);
         StateHasChanged();
     }
 
