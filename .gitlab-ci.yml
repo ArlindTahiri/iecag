@@ -11,15 +11,9 @@ variables:
   STORAGE_ACCOUNT:
     description: "the storage account name"
     value: "iecagstorage"
-  COSMOSDB_DATA_ACCOUNT:
-    description: "the cosmos db account"
-    value: "iecagcosmos"
   TABLE_CURRENT_PRICE:
     description: "current price table name"
     value: "currentprices"
-  TABLE_PRICE_HISTORY:
-    description: "price history table name"
-    value: "pricehistory"
   TABLE_PRICE_HISTORY_7DAYS:
     description: "price history table last 7 Days"
     value: "pricehistory7days"
