@@ -12,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -36,12 +39,14 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton<UserService>(sp =>
 {
     var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
-    return new UserService(connectionString);
+    var logger = sp.GetRequiredService<ILogger<UserService>>();
+    return new UserService(connectionString, logger);
 });
 builder.Services.AddSingleton<TransactionService>(sp =>
 {
     var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
-    return new TransactionService(connectionString);
+    var logger = sp.GetRequiredService<ILogger<TransactionService>>();
+    return new TransactionService(connectionString, logger);
 });
 
 builder.Services.AddResponseCompression(opts =>

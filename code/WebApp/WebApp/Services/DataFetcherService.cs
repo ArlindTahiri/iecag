@@ -40,17 +40,12 @@ namespace WebApp.Services
             _timer = new Timer(TimerCallback, null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
         }
 
+
         private async void TimerCallback(object state)
         {
             lock (_lock)
             {
-                // Code to fetch data from backend
                 FetchCurrentPricesFromAzureTable();
-                /*
-                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/crypto-com-chain", "Cronos");
-                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/bitcoin", "Bitcoin");
-                FetchPriceFromBackend("https://api.coingecko.com/api/v3/coins/ethereum", "Ethereum");
-                */
             }
         }
 
@@ -75,6 +70,7 @@ namespace WebApp.Services
             return coinPrices;
         }
         
+
         public async Task<double> FetchCurrentPrice(string coin)
         {
             var entity = await _tableClientCurrentPrices.GetEntityAsync<CoinPrice>(coin, "");
@@ -88,7 +84,6 @@ namespace WebApp.Services
                 return 0;
             }
         }
-        
 
         public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast180Days(string coin)
         {
@@ -101,6 +96,7 @@ namespace WebApp.Services
             return prices;
         }
 
+
         public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast30Days(string coin)
         {
             List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
@@ -111,6 +107,7 @@ namespace WebApp.Services
             prices = prices.OrderBy(x => x.Key).ToList();
             return prices;
         }
+
 
         public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLast7Days(string coin)
         {
@@ -123,6 +120,7 @@ namespace WebApp.Services
             prices = prices.OrderBy(x => x.Key).ToList();
             return prices;
         }
+
 
         public async Task<List<KeyValuePair<DateTime, double>>> FetchPriceOfLastXDays(string coin, int days)
         {
@@ -144,62 +142,6 @@ namespace WebApp.Services
             }
         }
 
-
-
-        public async Task FetchPriceFromBackend(string url, string name)
-        {
-            try
-            {
-                HttpResponseMessage response = await _httpClient.GetAsync(url);
-                
-
-                if (response.IsSuccessStatusCode)
-                {
-                    string responseData = await response.Content.ReadAsStringAsync();
-                    var obj = JsonSerializer.Deserialize<CoinGeckoResponse>(responseData);
-                    decimal? price = obj?.market_data?.current_price?.eur;
-                    await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, price);
-                }
-                else
-                {
-                    Random random = new Random();
-                    if (name.Equals("Cronos"))
-                    {
-                        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, (decimal)random.Next(90, 130)/1000);
-                    }
-                    if (name.Equals("Bitcoin"))
-                    {
-                        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, random.Next(60000, 63000));
-                    }
-                    if (name.Equals("Ethereum"))
-                    {
-                        await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", name, random.Next(3400, 3600));
-                    }
-                    
-                    Console.WriteLine($"Failed to fetch data from {url}. Status code: {response.StatusCode}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while fetching data from {url}: {ex.Message}");
-            }
-        }
-
-
-        public class CoinGeckoResponse
-        {
-            public MarketData market_data { get; set; }
-        }
-
-        public class MarketData
-        {
-            public PriceInfo current_price { get; set; }
-        }
-
-        public class PriceInfo
-        {
-            public decimal? eur { get; set; }
-        }
 
         // Methode to stop the timer when the application is stopped
         public void StopTimer()
