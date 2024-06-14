@@ -9,20 +9,21 @@
 
 <h1>@Name at @Price €</h1>
 
-<PriceChart Name="@Name" pricesList="priceList" @ref="priceChart" TimeRangeChanged="OnTimeRangeChanged" />
+<PriceChart Name="@Name" pricesList="priceList" @ref="priceChart" TimeRangeChanged="OnTimeRangeChanged" _timeRangeInDays="lastSelectedDays"/>
 
 @code {
     [Parameter] public string Name { get; set; }
     public double Price { get; set; }
     PriceChart priceChart;
     private HubConnection hubConnection;
+    public int lastSelectedDays = 7;
 
     public List<KeyValuePair<DateTime, double>> priceList { get; set; } = new List<KeyValuePair<DateTime, double>>();
 
     protected override async Task OnInitializedAsync()
     {
         Price = await dataFetcherService.FetchCurrentPrice(Name);
-        priceList = await dataFetcherService.FetchPriceOfLastXDays(Name,7);
+        priceList = await dataFetcherService.FetchPriceOfLastXDays(Name,lastSelectedDays);
 
         hubConnection = new HubConnectionBuilder()
             .WithUrl(Navigation.ToAbsoluteUri("/priceshub"))
@@ -43,6 +44,7 @@
 
     private async Task OnTimeRangeChanged(int days)
     {
+        lastSelectedDays = days;
         priceList = await dataFetcherService.FetchPriceOfLastXDays(Name, days);
         await priceChart.UpdateChart();
     }

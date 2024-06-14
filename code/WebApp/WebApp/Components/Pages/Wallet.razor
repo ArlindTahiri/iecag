@@ -7,7 +7,7 @@
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation;
-@implements IAsyncDisposable
+@implements IAsyncDisposable;
 @using Microsoft.Extensions.Options;
 @inject TransactionService transactionService;
 @inject DataFetcherService dataFetcherService;
@@ -17,7 +17,6 @@
 
 
 <PageTitle>IeCAG - Wallet</PageTitle>
-
 
 
 <div class="d-flex align-items-center">
@@ -36,7 +35,7 @@
 </div>
 
 <div style="display:flex;">
-    <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" Width="70vw" Height="30vh" TimeRangeChanged="OnTimeRangeChanged" />
+    <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" Width="70vw" Height="30vh" TimeRangeChanged="OnTimeRangeChanged" _timeRangeInDays="lastSelecteddays"/>
 
     <DoughnutChart Name="DoughnutChart" DataList="dataList" @ref="doughnutChart" Width="30vw" Height="30vh" />
 </div>
@@ -71,133 +70,14 @@
 
 <hr />
 <br />
-<div class="d-flex justify-content-end">
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#transactionModal">
-        Add Transaction
-    </button>
+<div class="d-flex justify-content-end justify-content-between">
+    <BuySellAtMarketpriceModal TransactionAdded="UpdateCharts" coinPrices="@coinPrices" walletEntries="@walletEntries" selectedWallet="@selectedWallet" username="@username" cryptocurrencies="@cryptocurrencies" />
+    <AddTransactionModal TransactionAdded="UpdateCharts" walletEntries="@walletEntries" selectedWallet="@selectedWallet" username="@username" cryptocurrencies="@cryptocurrencies" />
 </div>
 
-<div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="transactionModalLabel">Add Transaction</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <EditForm Model="@transaction" OnValidSubmit="AddTransaction" FormName="AddTransaction">
-                <DataAnnotationsValidator />
-                <div class="modal-body">
-                    <ul class="nav nav-pills nav-fill">
-                        <li class="nav-item">
-                            <button type="button" class="nav-link @(transactionType == "Buy" ? "active" : "")" aria-current="page" @onclick='(() => selectTransactionType("Buy"))'>Buy</button>
-                        </li>
-                        <li class="nav-item">
-                            <button type="button" class="nav-link @(transactionType == "Sell" ? "active" : "")" @onclick='(() => selectTransactionType("Sell"))'>Sell</button>
-                        </li>
-                    </ul>
-                    
-                    <div class="mt-4">
-                        <label>Select Cryptocurrency</label>
-                        <InputSelect @bind-Value="transaction.SelectedCryptocurrency" class="form-select mt-1" id="selectCryptocurrency">
-                            <option value="" disabled selected>Select a cryptocurrency</option>
-                            @foreach (var crypto in cryptocurrencies)
-                            {
-                                <option value="@crypto">@crypto</option>
-                            }
-                        </InputSelect>
-                        <ValidationMessage For="() => transaction.SelectedCryptocurrency" />
-                    </div>
-                    
-                    <div class="mt-3">
-                        <label>Amount</label>
-                        <InputNumber @bind-Value="transaction.Amount" class="form-control mt-1" id="amount" oninput="calculatePricePaidAllOrAveragePrice()" />
-                        <ValidationMessage For="() => transaction.Amount" />
-                    </div>
 
-                    <div class="mt-3 row">
-                        <div class="col">
-                            <label>Average Price</label>
-                            <InputNumber @bind-Value="transaction.AveragePrice" class="form-control mt-1" id="averagePrice" oninput="calculatePricePaidAll()" />
-                            <ValidationMessage For="() => transaction.AveragePrice" />
-                        </div>
-
-                        <div class="col">
-                            <label>Price Paid All</label>
-                            <InputNumber @bind-Value="transaction.PricePaidAll" class="form-control mt-1" id="pricePaidAll" oninput="calculateAveragePrice()" />
-                            <ValidationMessage For="() => transaction.PricePaidAll" />
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        <label>Transaction Date</label>
-                        <InputDate @bind-Value="transaction.TransactionDate" class="form-control mt-1" id="transactionDate" />
-                        <ValidationMessage For="() => transaction.TransactionDate" />
-                    </div>
-
-                    <div class="mt-3 text-center">
-                        <span class="text-danger">@errorMessage</span>
-                    </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary">Save changes</button>
-            </div>
-            </EditForm>
-        </div>
-    </div>
-</div>
 
 <script>
-    var lastInputField;
-
-    function calculatePricePaidAllOrAveragePrice() {
-        if (lastInputField == "pricePaidAll") {
-            
-            var averagePrice = parseFloat(document.getElementById("averagePrice").value);
-            var amount = parseFloat(document.getElementById("amount").value);
-            if (!isNaN(averagePrice) && !isNaN(amount)) {
-                var pricePaidAll = averagePrice * amount;
-                document.getElementById("pricePaidAll").value = pricePaidAll.toFixed(2);
-                var event = new Event("change");
-                document.getElementById("pricePaidAll").dispatchEvent(event);
-            }
-        }
-        else {
-            var pricePaidAll = parseFloat(document.getElementById("pricePaidAll").value);
-            var amount = parseFloat(document.getElementById("amount").value);
-            if (!isNaN(pricePaidAll) && !isNaN(amount)) {
-                var averagePrice = pricePaidAll / amount;
-                document.getElementById("averagePrice").value = averagePrice.toFixed(2);
-                var event = new Event("change");
-                document.getElementById("averagePrice").dispatchEvent(event);
-            }
-        }
-    }
-
-    function calculatePricePaidAll() {
-        lastInputField = "pricePaidAll";
-        var averagePrice = parseFloat(document.getElementById("averagePrice").value);
-        var amount = parseFloat(document.getElementById("amount").value);
-        if (!isNaN(averagePrice) && !isNaN(amount)) {
-            var pricePaidAll = averagePrice * amount;
-            document.getElementById("pricePaidAll").value = pricePaidAll.toFixed(2);
-            var event = new Event("change");
-            document.getElementById("pricePaidAll").dispatchEvent(event);
-        }
-    }
-
-    function calculateAveragePrice() {
-        lastInputField = "averagePrice";
-        var pricePaidAll = parseFloat(document.getElementById("pricePaidAll").value);
-        var amount = parseFloat(document.getElementById("amount").value);
-        if (!isNaN(pricePaidAll) && !isNaN(amount)) {
-            var averagePrice = pricePaidAll / amount;
-            document.getElementById("averagePrice").value = averagePrice.toFixed(2);
-            var event = new Event("change");
-            document.getElementById("averagePrice").dispatchEvent(event);
-        }
-    }
-
     function closeModal(modalId) {
         const modalElement = document.querySelector(modalId);
         const modalInstance = bootstrap.Modal.getInstance(modalElement);
@@ -241,22 +121,12 @@
 @code {
     PriceChart priceChart;
     DoughnutChart doughnutChart;
-    private string transactionType = "Buy";
+
     private string username;
-    private string? errorMessage;
     private string? errorMessageWallet;
     private int lastSelecteddays = 180;
 
-    [SupplyParameterFromForm]
-    public TransactionModel transaction { get; set; } = new();
-
     private WalletFormModel walletFormModel = new WalletFormModel();
-
-
-    private void selectTransactionType(string type)
-    {
-        transactionType = type;
-    }
 
     private List<string> cryptocurrencies = new List<string>();
 
@@ -273,6 +143,8 @@
 
     private HubConnection? hubConnection;
 
+    public List<CoinPrice> coinPrices = new List<CoinPrice>();
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -280,7 +152,7 @@
         var user = authState.User;
         username = user.Identity?.Name;
 
-        List<CoinPrice> coinPrices = await dataFetcherService.FetchAllCurrentPrices();
+        coinPrices = await dataFetcherService.FetchAllCurrentPrices();
         cryptocurrencies = coinPrices.Select(coin => coin.PartitionKey).ToList();
 
 
@@ -314,14 +186,17 @@
                 await priceChart.UpdateChart(DateTime.Now, allValue);
                 await doughnutChart.UpdateChart(name, existingEntry.CurrentPrice * existingEntry.Amount);
             }
+            var existingCoinEntry = coinPrices.FirstOrDefault(coin => coin.PartitionKey == name);
+            if (existingCoinEntry != null)
+            {
+                existingCoinEntry.price = price;
+            }
+
             InvokeAsync(StateHasChanged);
         });
 
         await hubConnection.StartAsync();
     }
-
-    public bool IsConnected =>
-        hubConnection?.State == HubConnectionState.Connected;
 
     public async ValueTask DisposeAsync()
     {
@@ -337,42 +212,19 @@
         Navigation.NavigateTo($"cryptocurrencies/{name}");
     }
 
-    private async Task AddTransaction()
+
+    private async Task UpdateCharts(string idOfModal)
     {
-        var walletEntry = walletEntries.FirstOrDefault(sp => sp.Name == transaction.SelectedCryptocurrency);
-        if(walletEntry == null && transactionType == "Sell")
-        {
-            errorMessage = "You don't have any of this cryptocurrency to sell";
-            return;
-        }
-        if(walletEntry != null && walletEntry.Amount < transaction.Amount && transactionType == "Sell")
-        {
-            errorMessage = "You don't have enough of this cryptocurrency to sell";
-            return;
-        }
-        if (string.IsNullOrWhiteSpace(selectedWallet))
-        {
-            errorMessage = "Please select a wallet";
-            return;
-        }
-
-        await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, transaction.TransactionDate, transactionType, selectedWallet);
-
         var allTransactionsOfUser = await transactionService.FetchAllTransactionsOfPerson(username);
         allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
         await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, lastSelecteddays);
 
-
         await priceChart.UpdateChart();
         await doughnutChart.UpdateChart();
-
-        errorMessage = "";
-        await CloseModalAsync("#transactionModal");
-
-        transaction = new TransactionModel();
-
+        await CloseModalAsync(idOfModal);
         StateHasChanged();
     }
+
 
     private async Task AddWallet()
     {
@@ -392,6 +244,7 @@
         await CloseModalAsync("#walletModal");
         StateHasChanged();
     }
+
 
     private async Task OnTimeRangeChanged(int days)
     {
@@ -415,7 +268,6 @@
         await doughnutChart.UpdateChart();
         StateHasChanged();
     }
-
 
     [Inject]
     IJSRuntime JSRuntime { get; set; }

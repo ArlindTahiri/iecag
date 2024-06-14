@@ -9,7 +9,7 @@
 
 <script>
     var DoughnutChart;
-    createDoughnutChart = (chartID, labels, data) => {
+    function createDoughnutChart (chartID, labels, data) {
         DoughnutChart = new Chart(document.getElementById(chartID), {
             type: 'doughnut',
             data: {
@@ -42,7 +42,7 @@
         });
     };
 
-    updateDoughnutChart = (labels, newData) => {
+    function updateDoughnutChart (labels, newData) {
         try {
             DoughnutChart.data.labels = labels;
             DoughnutChart.data.datasets.forEach((dataset) => {
@@ -54,7 +54,7 @@
         }
     };
 
-    updateDoughnutChartWithValue = (label, newValue) => {
+    function updateDoughnutChartWithValue (label, newValue) {
         try {
             const index = DoughnutChart.data.labels.indexOf(label);
             if (index !== -1) {
@@ -136,5 +136,5 @@
     [Parameter]
     public string Height { get; set; } = "50vh";
 
-    [Parameter] public List<KeyValuePair<string, double>> DataList { get; set; }
+    [Parameter] public List<KeyValuePair<string, double>> DataList { get; set; } = new();
 }

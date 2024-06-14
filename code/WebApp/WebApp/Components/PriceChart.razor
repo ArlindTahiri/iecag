@@ -3,9 +3,9 @@
 <div class="chart-container" style="position: relative; height:@Height; width:@Width; padding:20px; box-shadow: 0 7px 25px rgba(0,0,0,0.6); border-radius:25px;margin:10px; background: #2B3036;">
     <span class="badge text-bg-primary" style="position: absolute; top: 10px; left: 10px;">History</span>
     <div class="button-group" style="position: absolute; top: 10px; right: 10px;">
-        <button type="button" class="btn btn-outline-primary" @onclick="() => UpdateTimeRange(7)">7D</button>
-        <button type="button" class="btn btn-outline-primary" @onclick="() => UpdateTimeRange(30)">30D</button>
-        <button type="button" class="btn btn-outline-primary" @onclick="() => UpdateTimeRange(180)">180D</button>
+        <button type="button" class="btn btn-outline-primary @GetActiveClass(7)" @onclick="() => UpdateTimeRange(7)">7D</button>
+        <button type="button" class="btn btn-outline-primary @GetActiveClass(30)" @onclick="() => UpdateTimeRange(30)">30D</button>
+        <button type="button" class="btn btn-outline-primary @GetActiveClass(180)" @onclick="() => UpdateTimeRange(180)">180D</button>
     </div>
     <canvas id="@Name"></canvas>
 
@@ -13,7 +13,7 @@
 
 <script>
     var PriceChart;
-    createPriceChart = (priceChartID, labels, data) => {
+    function createPriceChart (priceChartID, labels, data) {
         PriceChart = new Chart(document.getElementById(priceChartID), {
             type: 'line',
             data: {
@@ -55,7 +55,7 @@
         });
     };
 
-    updatePriceChart = (labels, newData) => {
+    function updatePriceChart (labels, newData) {
         try {
             PriceChart.data.labels = labels;
             PriceChart.data.datasets.forEach((dataset) => {
@@ -70,7 +70,9 @@
 
 @code {
     private bool _isRendered;
-    private int _timeRangeInDays;
+
+    [Parameter]
+    public int _timeRangeInDays { get; set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -124,6 +126,12 @@
         await TimeRangeChanged.InvokeAsync(days);
     }
 
+    private string GetActiveClass(int days)
+    {
+        return _timeRangeInDays == days ? "active" : "";
+    }
+
+
     [Parameter] public EventCallback<int> TimeRangeChanged { get; set; }
 
     [Inject] public IJSRuntime JSRuntime { get; set; }
@@ -151,5 +159,5 @@
     [Parameter]
     public string Height { get; set; } = "70vh";
 
-    [Parameter] public List<KeyValuePair<DateTime, double>> pricesList { get; set; }
+    [Parameter] public List<KeyValuePair<DateTime, double>> pricesList { get; set; } = new();
 }
