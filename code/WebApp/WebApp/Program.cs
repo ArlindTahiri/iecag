@@ -36,6 +36,13 @@ builder.Services.AddSingleton<DataFetcherService>(sp =>
 
 builder.Services.AddHttpClient();
 
+builder.Services.AddSingleton<NotificationService>(sp =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
+    var logger = sp.GetRequiredService<ILogger<NotificationService>>();
+    return new NotificationService(connectionString, logger);
+});
+
 builder.Services.AddSingleton<UserService>(sp =>
 {
     var connectionString = builder.Configuration.GetConnectionString("AzureStorage");

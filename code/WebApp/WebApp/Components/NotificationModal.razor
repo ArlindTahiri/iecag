@@ -1,4 +1,5 @@
-﻿@inject NavigationManager Navigation
+﻿@rendermode InteractiveServer
+@inject NotificationService notificationService
 
 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#notificationModal">
     Set Notification
@@ -31,15 +32,29 @@
 
 @code {
     [Parameter] public string Name { get; set; }
+    [Parameter] public double CurrentPrice { get; set; }
     public double NotificationPrice { get; set; }
     public string Email { get; set; }
 
     private async Task SubmitNotification()
     {
-        // Logik zum Speichern der Benachrichtigung
-        // Zum Beispiel könnte hier ein SignalR-Aufruf oder ein HTTP-Aufruf zum Backend erfolgen
-        Console.WriteLine($"Notification set for {Name} at price {NotificationPrice}");
+        if (string.IsNullOrWhiteSpace(Email) || NotificationPrice == 0)
+        {
+            return;
+        }
+
+        if (NotificationPrice >= CurrentPrice)
+        {
+            await notificationService.CreateNotificationAsync(Email, Name, NotificationPrice, "above");
+        }
+        else
+        {
+            await notificationService.CreateNotificationAsync(Email, Name, NotificationPrice, "below");
+        }
+
         await CloseModalAsync("#notificationModal");
+        Email = "";
+        NotificationPrice = 0;
     }
 
     [Inject]
