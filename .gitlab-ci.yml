@@ -26,6 +26,9 @@ variables:
   TABLE_LOGS:
     description: "logs table"
     value: "logs"
+  TABLE_USERS:
+    description: "users table"
+    value: "users"
   APPSERVICE_PLAN_NAME:
     description: "app service plan name"
     value: "iecagAppServicePlan"
