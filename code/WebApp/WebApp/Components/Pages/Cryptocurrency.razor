@@ -10,6 +10,7 @@
 <h1>@Name at @Price €</h1>
 
 <PriceChart Name="@Name" pricesList="priceList" @ref="priceChart" TimeRangeChanged="OnTimeRangeChanged" _timeRangeInDays="lastSelectedDays"/>
+<NotificationModal Name="@Name" />
 
 @code {
     [Parameter] public string Name { get; set; }
