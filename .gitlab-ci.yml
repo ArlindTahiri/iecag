@@ -32,6 +32,9 @@ variables:
   TABLE_TRANSACTIONS:
     description: "transactions table"
     value: "transactions"
+  TABLE_NOTIFICATIONS:
+    description: "notifications table"
+    value: "notifications"
   APPSERVICE_PLAN_NAME:
     description: "app service plan name"
     value: "iecagAppServicePlan"
@@ -137,6 +140,7 @@ azure_create_datatable:
     - az storage table create --name $TABLE_LOGS --account-name $STORAGE_ACCOUNT || exit 0
     - az storage table create --name $TABLE_USERS --account-name $STORAGE_ACCOUNT || exit 0
     - az storage table create --name $TABLE_TRANSACTIONS --account-name $STORAGE_ACCOUNT || exit 0
+    - az storage table create --name $TABLE_NOTIFICATIONS --account-name $STORAGE_ACCOUNT || exit 0
   rules:
     - if: '$DEPLOY == "true"'
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
