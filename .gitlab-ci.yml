@@ -23,6 +23,9 @@ variables:
   TABLE_PRICE_HISTORY_180DAYS:
     description: "price history table last 180 Days"
     value: "pricehistory180days"
+  TABLE_LOGS:
+    description: "logs table"
+    value: "logs"
   APPSERVICE_PLAN_NAME:
     description: "app service plan name"
     value: "iecagAppServicePlan"
@@ -125,6 +128,7 @@ azure_create_datatable:
     - az storage table create --name $TABLE_PRICE_HISTORY_7DAYS --account-name $STORAGE_ACCOUNT || exit 0
     - az storage table create --name $TABLE_PRICE_HISTORY_30DAYS --account-name $STORAGE_ACCOUNT || exit 0
     - az storage table create --name $TABLE_PRICE_HISTORY_180DAYS --account-name $STORAGE_ACCOUNT || exit 0
+    - az storage table create --name $TABLE_LOGS --account-name $STORAGE_ACCOUNT || exit 0
   rules:
     - if: '$DEPLOY == "true"'
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
