@@ -162,6 +162,7 @@ azure_create_webapp:
     - STORAGE_CONNECTION_STRING=$(az storage account show-connection-string --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query connectionString -o tsv)
     - az webapp create --resource-group $RESOURCE_GROUP --plan $APPSERVICE_PLAN_NAME --name $WEBAPP_NAME --runtime "dotnet:8" || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --settings ConnectionStrings__AzureStorage=$STORAGE_CONNECTION_STRING || exit 0
+    - az webapp config set --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --web-sockets-enabled true || exit 0
 
 azure_build_webapp:
   stage: azure_setup
