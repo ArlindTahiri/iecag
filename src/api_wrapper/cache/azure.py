@@ -26,50 +26,61 @@ from azure.core.credentials import AzureNamedKeyCredential
 from azure.core.exceptions import HttpResponseError, ResourceExistsError
 
 import logging
+from datetime import datetime
+import decimal
 
 endpoint = f"https://{os.getenv('AZURE_ACCOUNT_NAME')}.table.core.windows.net/"
 credential = AzureNamedKeyCredential(os.getenv("AZURE_ACCOUNT_NAME"), os.getenv("AZURE_ACCESS_KEY"))
-table_name = os.getenv("AZURE_TABLE_NAME")
+
+ctx = decimal.Context()
+ctx.prec = 10
+
+
+def float_to_str(f):
+    """Hack to get a better representation
+    """
+    return format(ctx.create_decimal(repr(f)), 'f')
+
 
 class AzureCache:
-    def cache_price(self, timestamp, coin, price):
-        logging.warning(f"Caching price {timestamp} {coin} {price}")
+    def cache_price(self, timestamp, coin, price, history_table):
+        logging.warning(f"Caching price {timestamp} {coin} {price} into {history_table}")
+        price = float_to_str(price)
 
         with TableServiceClient(
                 endpoint=endpoint, credential=credential
         ) as table_service_client:
-            #properties = table_service_client.get_service_properties()
+            # properties = table_service_client.get_service_properties()
 
-            table_service_client.create_table_if_not_exists("pricehistory")
+            if history_table:
+                table_service_client.create_table_if_not_exists(history_table)
 
-            e = TableEntity({
-                "PartitionKey": str(uuid.uuid4()),
-                "RowKey": coin,
-                'timestamp': timestamp,
-                'coin': coin,
-                'price': price
-            }
-            )
-            table = table_service_client.get_table_client("pricehistory")
-            table.create_entity(e)
+                e = TableEntity({
+                    "PartitionKey": str(coin).title(),
+                    "RowKey": str(uuid.uuid4()),
+                    'PriceDate': datetime.fromtimestamp(timestamp).strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+                    'price': price
+                })
+                table = table_service_client.get_table_client(history_table)
+                table.create_entity(e)
 
             table_service_client.create_table_if_not_exists("currentprices")
 
             table = table_service_client.get_table_client("currentprices")
-            #results = table_service_client.query_tables(f"PartitionKey eq '{coin}'")
-            #logging.warning(results)
+            # results = table_service_client.query_tables(f"PartitionKey eq '{coin}'")
+            # logging.warning(results)
 
             c = TableEntity({
-                "PartitionKey": str(coin),
+                "PartitionKey": str(coin).title(),
                 "RowKey": "",
-                'coin': coin,
+                'coin': coin.title(),
                 'price': price
             })
 
             try:
                 table.create_entity(c)
             except ResourceExistsError:
-                e = table.get_entity(coin, "")
+                e = table.get_entity(str(coin).title(), "")
                 logging.warning(e)
-                table.delete_entity(coin, "")
+                table.delete_entity(str(coin).title(), "")
                 table.create_entity(c)
