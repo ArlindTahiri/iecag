@@ -154,6 +154,8 @@ azure_create_resource_group_datatable_appserviceplan_webapp:
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings AZURE_ACCESS_KEY=$AZURE_ACCESS_KEY || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings COINGECKO_TOKEN=$COINGECKO_TOKEN || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings AZURE_ACCOUNT_NAME=$STORAGE_ACCOUNT || exit 0
+    - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true || exit 0
+    - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings WEBSITES_PORT=8080 || exit 0
   rules:
     - if: '$DEPLOY == "true"'
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
