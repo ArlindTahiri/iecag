@@ -56,6 +56,9 @@ variables:
   WRAPPER_DIR:
     description: "path to api_wrapper"
     value: "./code/api_wrapper"
+  CONTAINER_REGISTRY_NAME:
+    description: "container registry"
+    value: "iecagconreg"
 
 
 stages:
@@ -192,26 +195,36 @@ azure_deploy_webapp:
   script:
     - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --src code/WebApp/out/app.zip || exit 0
 
-build_api_wrapper:
-  stage: azure_setup
-  image: docker:latest
-  services:
-    - docker:dind
-  before_script:
-    - echo $CI_JOB_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
-  script:
-    - cd $WRAPPER_DIR
-    - docker build -t "$CI_REGISTRY_IMAGE/api_wrapper" .
-    - docker push "$CI_REGISTRY_IMAGE/api_wrapper"
+#build_api_wrapper:
+#  stage: azure_setup
+#  image: docker:latest
+#  services:
+#    - docker:dind
+#  before_script:
+#    - echo $CI_JOB_TOKEN | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+#  script:
+#    - cd $WRAPPER_DIR
+#    - docker build -t "$CI_REGISTRY_IMAGE/api_wrapper" .
+#    - docker push "$CI_REGISTRY_IMAGE/api_wrapper"
 
 azure_deploy_wrapper:
   stage: azure_setup
   allow_failure: true
   needs:
     - azure_create_datatable
-    - build_api_wrapper
+    #- build_api_wrapper
   script:
+    - az acr create --resource-group $RESOURCE_GROUP --name $CONTAINER_REGISTRY_NAME --sku Basic --admin-enabled true || exit 0
+    - ACR_LOGIN_SERVER=$(az acr show --name $CONTAINER_REGISTRY_NAME --resource-group $RESOURCE_GROUP --query loginServer --output tsv)
+    - ACR_USERNAME=$(az acr credential show --name $CONTAINER_REGISTRY_NAME --query "username" --output tsv)
+    - ACR_PASSWORD=$(az acr credential show --name $CONTAINER_REGISTRY_NAME --query "passwords[0].value" --output tsv)
+    - cd $WRAPPER_DIR
+    - az acr build --image api_wrapper:latest --registry $ACR_LOGIN_SERVER --file Dockerfile .
+
     - az containerapp env create --name $CONTAINER_ENV --resource-group $RESOURCE_GROUP --location $AZURE_LOCATION
     - AZURE_ACCESS_KEY="$(az storage account keys list --account-name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP | jq -r .[0].value)"
+    #- AZURE_ACCESS_KEY=$(az storage account show-connection-string --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCE_GROUP --query connectionString --output tsv)
     - echo ${#AZURE_ACCESS_KEY}
-    - az containerapp up -n $WRAPPER_CONTAINER_NAME --image $CI_REGISTRY_IMAGE/api_wrapper:latest --ingress external --target-port 8080 --environment $CONTAINER_ENV --registry-server "$CI_REGISTRY" --registry-password "$CI_REGISTRY_PASSWORD" --registry-username "$CI_REGISTRY_USER" --env-vars COINGECKO_TOKEN=$COINGECKO_TOKEN AZURE_ACCOUNT_NAME=$STORAGE_ACCOUNT AZURE_ACCESS_KEY=$AZURE_ACCESS_KEY || exit 0
+    #- az containerapp up -n $WRAPPER_CONTAINER_NAME --image $CI_REGISTRY_IMAGE/api_wrapper:latest --ingress external --target-port 8080 --environment $CONTAINER_ENV --registry-server "$CI_REGISTRY" --registry-password "$CI_REGISTRY_PASSWORD" --registry-username "$CI_REGISTRY_USER" --env-vars COINGECKO_TOKEN=$COINGECKO_TOKEN AZURE_ACCOUNT_NAME=$STORAGE_ACCOUNT AZURE_ACCESS_KEY=$AZURE_ACCESS_KEY || exit 0
+    - az container create --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --image $CONTAINER_REGISTRY_NAME.azurecr.io/api_wrapper:latest --cpu 1 --memory 1 --registry-login-server $CONTAINER_REGISTRY_NAME.azurecr.io --registry-username $ACR_USERNAME --registry-password$ACR_PASSWORD --dns-name-label $WRAPPER_CONTAINER_NAMEdns --ingress external --target-port 8080
+
