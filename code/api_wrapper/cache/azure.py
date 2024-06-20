@@ -32,7 +32,8 @@ import decimal
 endpoint = f"https://{os.getenv('AZURE_ACCOUNT_NAME')}.table.core.windows.net/"
 logging.warning(f"endpoint: {endpoint}")
 credential = AzureNamedKeyCredential(os.getenv("AZURE_ACCOUNT_NAME"), os.getenv("AZURE_ACCESS_KEY"))
-logging.warning(f"AZURE_ACCOUNT_NAME: {len('AZURE_ACCOUNT_NAME')}\nAZURE_ACCESS_KEY: {len('AZURE_ACCESS_KEY')}")
+connection_string = os.getenv("AZURE_CONNECTION_STRING")
+logging.warning(f"AZURE_ACCOUNT_NAME: {len(os.getenv('AZURE_ACCOUNT_NAME'))}\nAZURE_ACCESS_KEY: {len(os.getenv('AZURE_ACCESS_KEY'))}\nAZURE_CONNECTION_STRING: {len(connection_string)}")
 
 ctx = decimal.Context()
 ctx.prec = 10
@@ -50,9 +51,10 @@ class AzureCache:
         price = float_to_str(price)
 
         logging.warning("Setting up TableServiceClient")
-        with TableServiceClient(
-                endpoint=endpoint, credential=credential
-        ) as table_service_client:
+        #with TableServiceClient(
+        #        endpoint=endpoint, credential=credential
+        #) as table_service_client:
+        with TableServiceClient.from_connection_string(conn_str=connection_string) as table_service_client:
             # properties = table_service_client.get_service_properties()
             logging.warning("TableServiceClient set up")
             if history_table:
