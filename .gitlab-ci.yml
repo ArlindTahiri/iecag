@@ -221,7 +221,7 @@ azure_deploy_wrapper:
     - cd $WRAPPER_DIR
     - az acr build --image api_wrapper:latest --registry $ACR_LOGIN_SERVER --file Dockerfile .
 
-    - az containerapp env create --name $CONTAINER_ENV --resource-group $RESOURCE_GROUP --location $AZURE_LOCATION
+    #- az containerapp env create --name $CONTAINER_ENV --resource-group $RESOURCE_GROUP --location $AZURE_LOCATION || exit 0
     - AZURE_ACCESS_KEY="$(az storage account keys list --account-name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP | jq -r .[0].value)"
     #- AZURE_ACCESS_KEY=$(az storage account show-connection-string --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCE_GROUP --query connectionString --output tsv)
     - echo ${#AZURE_ACCESS_KEY}
