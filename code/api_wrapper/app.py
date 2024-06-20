@@ -22,6 +22,7 @@ app.register_blueprint(blueprint, doc='/doc/')  # '/api/doc/'
 
 manager = manager.Manager(coingecko_token=COINGECKO_TOKEN)
 
+
 @api.route('/price', endpoint='price')
 @api.doc(params={'currency': 'Currency', 'vs_currency': 'Currency compared against'})
 class Prices(Resource):
@@ -56,13 +57,21 @@ def get_prices(table_name=""):
         logging.error(e)
 
 
-if __name__ == "__main__":
-    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080), daemon=True).start()
+def start_fetch():
     get_prices()
     schedule.every(2).minutes.do(get_prices)
     schedule.every(30).minutes.do(get_prices, table_name="pricehistory7days")
     schedule.every(2).hours.do(get_prices, table_name="pricehistory30days")
     schedule.every(12).hours.do(get_prices, table_name="pricehistory180days")
     while True:
-        schedule.run_pending()
+        try:
+            schedule.run_pending()
+        except Exception as e:
+            logging.error(e)
         time.sleep(1)
+
+
+threading.Thread(target=lambda: start_fetch(), daemon=True).start()
+
+if __name__ == "__main__":
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080, debug=False), daemon=True).start()
