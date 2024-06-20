@@ -113,7 +113,9 @@ terraform:
 # This could be checked for, but currently I am just happy to have fixed the azure-cli certificate problem.
 # The allow_failure documents some allowed exit codes.
 # And yes, the `|| exit 0` is terrible, but it makes the pipeline a pretty green.
-azure_create_resource_group:
+
+# Not pretty, but practical: the docker executor takes too long to run the setup in separate steps
+azure_create_resource_group_datatable_appserviceplan_webapp:
   stage: azure_setup
   allow_failure:
     exit_codes:
@@ -123,16 +125,7 @@ azure_create_resource_group:
     - tilly_nuke
   script:
     - az group create -n $RESOURCE_GROUP -l westeurope || exit 0
-  rules:
-    - if: '$DEPLOY == "true"'
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
-azure_create_datatable:
-  stage: azure_setup
-  allow_failure: true
-  needs:
-    - azure_create_resource_group
-  script:
+    - echo "Creating datatable"
     - az storage account create -n $STORAGE_ACCOUNT -g $RESOURCE_GROUP -l westus --subscription $SUBSCRIPTION_ID || exit 0
     - AZURE_STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP | jq -r .[0].value) || exit 0
     - echo ${#AZURE_STORAGE_ACCOUNT_KEY}
@@ -144,36 +137,22 @@ azure_create_datatable:
     - az storage table create --name $TABLE_USERS --account-name $STORAGE_ACCOUNT || exit 0
     - az storage table create --name $TABLE_TRANSACTIONS --account-name $STORAGE_ACCOUNT || exit 0
     - az storage table create --name $TABLE_NOTIFICATIONS --account-name $STORAGE_ACCOUNT || exit 0
-  rules:
-    - if: '$DEPLOY == "true"'
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-
-azure_create_appserviceplan:
-  stage: azure_setup
-  allow_failure: true
-  needs:
-    - azure_create_datatable
-  script:
+    - echo "Creating appserviceplan"
     - az appservice plan create --name $APPSERVICE_PLAN_NAME --resource-group $RESOURCE_GROUP --sku F1 || exit 0
-
-azure_create_webapp:
-  stage: azure_setup
-  allow_failure: true
-  needs:
-    - azure_create_appserviceplan
-  script:
     - echo "Creating webapp"
     - STORAGE_CONNECTION_STRING=$(az storage account show-connection-string --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query connectionString -o tsv)
     - az webapp create --resource-group $RESOURCE_GROUP --plan $APPSERVICE_PLAN_NAME --name $WEBAPP_NAME --runtime "dotnet:8" || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --settings ConnectionStrings__AzureStorage=$STORAGE_CONNECTION_STRING || exit 0
     - az webapp config set --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --web-sockets-enabled true || exit 0
     - echo "Creating wrapper"
-    - AZURE_ACCESS_KEY=$(az storage account show-connection-string --name $STORAGE_ACCOUNT_NAME --resource-group $RESOURCE_GROUP --query connectionString --output tsv)
+    - AZURE_ACCESS_KEY=$(az storage account show-connection-string --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query connectionString --output tsv)
     - az webapp create --resource-group $RESOURCE_GROUP --plan $APPSERVICE_PLAN_NAME --name $WRAPPER_CONTAINER_NAME --runtime "PYTHON:3.8" || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings AZURE_ACCESS_KEY=$AZURE_ACCESS_KEY || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings COINGECKO_TOKEN=$COINGECKO_TOKEN || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings AZURE_ACCOUNT_NAME=$STORAGE_ACCOUNT || exit 0
-
+  rules:
+    - if: '$DEPLOY == "true"'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 azure_build_webapp:
   stage: azure_setup
@@ -215,9 +194,7 @@ azure_deploy_webapp:
   stage: azure_setup
   allow_failure: true
   needs:
-    - azure_build_webapp
-    - azure_build_wrapper
-    - azure_create_webapp
+    - azure_create_resource_group_datatable_appserviceplan_webapp
   script:
     - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --src code/WebApp/out/app.zip || exit 0
     - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --src code/api_wrapper/app.zip || exit 0
