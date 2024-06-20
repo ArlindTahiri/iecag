@@ -13,6 +13,7 @@ from flask_restx import Resource, Api, reqparse
 import manager
 
 COINGECKO_TOKEN = os.environ.get('COINGECKO_TOKEN', '')
+FETCH_THREAD = None
 
 app = Flask(__name__)
 api = Api(app)
@@ -39,7 +40,12 @@ class Prices(Resource):
 @api.doc(params={})
 class Health(Resource):
     def get(self):
-        return {"healthy": True}
+        try:
+            thread_alive = FETCH_THREAD.is_alive()
+        except Exception as e:
+            logging.error(e)
+            thread_alive = None
+        return {"healthy": True, "thread": thread_alive}
 
 
 api.add_resource(Prices, '/price')
@@ -71,7 +77,8 @@ def start_fetch():
         time.sleep(1)
 
 
-threading.Thread(target=lambda: start_fetch(), daemon=True).start()
+FETCH_THREAD = threading.Thread(target=lambda: start_fetch(), daemon=True)
+FETCH_THREAD.start()
 
 if __name__ == "__main__":
     threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080, debug=False), daemon=True).start()
