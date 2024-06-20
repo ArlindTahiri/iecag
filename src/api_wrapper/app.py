@@ -34,9 +34,22 @@ class Prices(Resource):
         return {'price': manager.get_price(p.get("currency"), p.get("vs_currency"))}
 
 
+@api.route('/health', endpoint='health')
+@api.doc(params={})
+class Health(Resource):
+    def get(self):
+        return {"healthy": True}
+
+
 api.add_resource(Prices, '/price')
+api.add_resource(Health, '/health')
 
 if __name__ == "__main__":
-    scheduler = sched.scheduler(time.time, time.sleep)
-    scheduler.enter(60, 1, manager.call_api, ("bitcoin",))
-    app.run(host="0.0.0.0", port=8080)
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080), daemon=True).start()
+    while True:
+        try:
+            manager.call_api("bitcoin")
+            manager.call_api("ethereum")
+        except Exception as e:
+            logging.error(e)
+        time.sleep(120)

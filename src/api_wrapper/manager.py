@@ -1,3 +1,4 @@
+import logging
 import time
 
 from endpoints.coingecko import CoinGecko
@@ -8,7 +9,7 @@ class Manager:
         self.coingecko_token = coingecko_token
 
         self.cache = AzureCache()
-        self.wrapper = CoinGecko()
+        self.wrapper = CoinGecko(coingecko_token)
 
     def get_price(self, curr, vs_curr):
         # call the cache
@@ -19,5 +20,7 @@ class Manager:
             return None
 
     def call_api(self, curr):
+        logging.warning(f"Get price {curr}")
         price = self.wrapper.get_price(curr, "eur")
+        logging.warning(f"Price: {price}")
         self.cache.cache_price(time.time(), curr, price)
