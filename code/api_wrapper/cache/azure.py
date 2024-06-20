@@ -30,7 +30,9 @@ from datetime import datetime
 import decimal
 
 endpoint = f"https://{os.getenv('AZURE_ACCOUNT_NAME')}.table.core.windows.net/"
+logging.warning(f"endpoint: {endpoint}")
 credential = AzureNamedKeyCredential(os.getenv("AZURE_ACCOUNT_NAME"), os.getenv("AZURE_ACCESS_KEY"))
+logging.warning(f"AZURE_ACCOUNT_NAME: {len('AZURE_ACCOUNT_NAME')}\nAZURE_ACCESS_KEY: {len('AZURE_ACCESS_KEY')}")
 
 ctx = decimal.Context()
 ctx.prec = 10
@@ -47,12 +49,14 @@ class AzureCache:
         logging.warning(f"Caching price {timestamp} {coin} {price} into {history_table}")
         price = float_to_str(price)
 
+        logging.warning("Setting up TableServiceClient")
         with TableServiceClient(
                 endpoint=endpoint, credential=credential
         ) as table_service_client:
             # properties = table_service_client.get_service_properties()
-
+            logging.warning("TableServiceClient set up")
             if history_table:
+                logging.warning(f"Inserting into {history_table}")
                 table_service_client.create_table_if_not_exists(history_table)
 
                 e = TableEntity({
@@ -64,6 +68,7 @@ class AzureCache:
                 table = table_service_client.get_table_client(history_table)
                 table.create_entity(e)
 
+            logging.warning("Inserting into currentprices")
             table_service_client.create_table_if_not_exists("currentprices")
 
             table = table_service_client.get_table_client("currentprices")
@@ -81,6 +86,6 @@ class AzureCache:
                 table.create_entity(c)
             except ResourceExistsError:
                 e = table.get_entity(str(coin).title(), "")
-                logging.warning(e)
+                logging.warning(f"Entity already existed: {e}")
                 table.delete_entity(str(coin).title(), "")
                 table.create_entity(c)
