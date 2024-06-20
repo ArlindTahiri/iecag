@@ -4,6 +4,7 @@ import sched
 import threading
 import time
 
+import schedule
 from flask import Flask, jsonify, request, Blueprint
 from flask_restx import Resource, Api, reqparse
 
@@ -21,7 +22,6 @@ app.register_blueprint(blueprint, doc='/doc/')  # '/api/doc/'
 
 manager = manager.Manager(coingecko_token=COINGECKO_TOKEN)
 
-
 @api.route('/price', endpoint='price')
 @api.doc(params={'currency': 'Currency', 'vs_currency': 'Currency compared against'})
 class Prices(Resource):
@@ -34,9 +34,35 @@ class Prices(Resource):
         return {'price': manager.get_price(p.get("currency"), p.get("vs_currency"))}
 
 
+@api.route('/health', endpoint='health')
+@api.doc(params={})
+class Health(Resource):
+    def get(self):
+        return {"healthy": True}
+
+
 api.add_resource(Prices, '/price')
+api.add_resource(Health, '/health')
+
+
+def get_prices(table_name=""):
+    try:
+        logging.warning(f"Running scheduled task for {table_name!r}")
+        timestamp = time.time()
+        manager.call_api("bitcoin", table_name, timestamp)
+        manager.call_api("ethereum", table_name, timestamp)
+        manager.call_api("cronos", table_name, timestamp)
+    except Exception as e:
+        logging.error(e)
+
 
 if __name__ == "__main__":
-    scheduler = sched.scheduler(time.time, time.sleep)
-    scheduler.enter(60, 1, manager.call_api, ("bitcoin",))
-    app.run(host="0.0.0.0", port=8080)
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=8080), daemon=True).start()
+    get_prices()
+    schedule.every(2).minutes.do(get_prices)
+    schedule.every(30).minutes.do(get_prices, table_name="pricehistory7days")
+    schedule.every(2).hours.do(get_prices, table_name="pricehistory30days")
+    schedule.every(12).hours.do(get_prices, table_name="pricehistory180days")
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
