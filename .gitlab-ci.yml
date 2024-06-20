@@ -150,7 +150,7 @@ azure_create_resource_group_datatable_appserviceplan_webapp:
     - az webapp config set --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --web-sockets-enabled true || exit 0
     - echo "Creating wrapper"
     - AZURE_ACCESS_KEY=$(az storage account show-connection-string --name $STORAGE_ACCOUNT --resource-group $RESOURCE_GROUP --query connectionString --output tsv)
-    - az webapp create --resource-group $RESOURCE_GROUP --plan $APPSERVICE_WRAPPER_PLAN_NAME --name $WRAPPER_CONTAINER_NAME --runtime "PYTHON:3.8" || exit 0
+    - az webapp create --resource-group $RESOURCE_GROUP --plan $APPSERVICE_WRAPPER_PLAN_NAME --name $WRAPPER_CONTAINER_NAME --runtime "PYTHON:3.10" || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings AZURE_ACCESS_KEY=$AZURE_ACCESS_KEY || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings COINGECKO_TOKEN=$COINGECKO_TOKEN || exit 0
     - az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --settings AZURE_ACCOUNT_NAME=$STORAGE_ACCOUNT || exit 0
