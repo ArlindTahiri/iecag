@@ -217,6 +217,7 @@ azure_deploy_webapp:
   needs:
     - azure_build_webapp
     - azure_build_wrapper
+    - azure_create_webapp
   script:
     - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WEBAPP_NAME --src code/WebApp/out/app.zip || exit 0
     - az webapp deployment source config-zip --resource-group $RESOURCE_GROUP --name $WRAPPER_CONTAINER_NAME --src code/api_wrapper/app.zip || exit 0
