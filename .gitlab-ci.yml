@@ -178,8 +178,6 @@ azure_create_webapp:
 azure_build_webapp:
   stage: azure_setup
   image: mcr.microsoft.com/dotnet/sdk:8.0
-  needs:
-    - azure_create_webapp
   before_script:
     - echo "Building webapp"
   script:
@@ -198,8 +196,6 @@ azure_build_webapp:
 azure_build_wrapper:
   stage: azure_setup
   image: python:3
-  needs:
-    - azure_create_webapp
   before_script:
     - echo "Building wrapper"
   script:
