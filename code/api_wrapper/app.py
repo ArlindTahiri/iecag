@@ -58,7 +58,7 @@ def get_prices(table_name=""):
         timestamp = time.time()
         manager.call_api("bitcoin", table_name, timestamp)
         manager.call_api("ethereum", table_name, timestamp)
-        manager.call_api("cronos", table_name, timestamp)
+        manager.call_api("crypto-com-chain", table_name, timestamp)
     except Exception as e:
         logging.error(e)
 

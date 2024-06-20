@@ -33,7 +33,8 @@ endpoint = f"https://{os.getenv('AZURE_ACCOUNT_NAME')}.table.core.windows.net/"
 logging.warning(f"endpoint: {endpoint}")
 credential = AzureNamedKeyCredential(os.getenv("AZURE_ACCOUNT_NAME"), os.getenv("AZURE_ACCESS_KEY"))
 connection_string = os.getenv("AZURE_CONNECTION_STRING")
-logging.warning(f"AZURE_ACCOUNT_NAME: {len(os.getenv('AZURE_ACCOUNT_NAME'))}\nAZURE_ACCESS_KEY: {len(os.getenv('AZURE_ACCESS_KEY'))}\nAZURE_CONNECTION_STRING: {len(connection_string)}")
+logging.warning(
+    f"AZURE_ACCOUNT_NAME: {len(os.getenv('AZURE_ACCOUNT_NAME'))}\nAZURE_ACCESS_KEY: {len(os.getenv('AZURE_ACCESS_KEY'))}\nAZURE_CONNECTION_STRING: {len(connection_string)}")
 
 ctx = decimal.Context()
 ctx.prec = 10
@@ -45,15 +46,23 @@ def float_to_str(f):
     return format(ctx.create_decimal(repr(f)), 'f')
 
 
+def coin_name_fix(coin_name):
+    """Hack to store it using names Arlind likes ;)
+    """
+    if str(coin_name) == "crypto-com-chain":
+        return "Cronos"
+    return str(coin_name).title()
+
+
 class AzureCache:
     def cache_price(self, timestamp, coin, price, history_table):
         logging.warning(f"Caching price {timestamp} {coin} {price} into {history_table}")
         price = float_to_str(price)
 
         logging.warning("Setting up TableServiceClient")
-        #with TableServiceClient(
+        # with TableServiceClient(
         #        endpoint=endpoint, credential=credential
-        #) as table_service_client:
+        # ) as table_service_client:
         with TableServiceClient.from_connection_string(conn_str=connection_string) as table_service_client:
             # properties = table_service_client.get_service_properties()
             logging.warning("TableServiceClient set up")
@@ -62,7 +71,7 @@ class AzureCache:
                 table_service_client.create_table_if_not_exists(history_table)
 
                 e = TableEntity({
-                    "PartitionKey": str(coin).title(),
+                    "PartitionKey": coin_name_fix(coin),
                     "RowKey": str(uuid.uuid4()),
                     'PriceDate': datetime.fromtimestamp(timestamp).strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
                     'price': price
@@ -78,16 +87,16 @@ class AzureCache:
             # logging.warning(results)
 
             c = TableEntity({
-                "PartitionKey": str(coin).title(),
+                "PartitionKey": coin_name_fix(coin),
                 "RowKey": "",
-                'coin': coin.title(),
+                'coin': coin_name_fix(coin),
                 'price': price
             })
 
             try:
                 table.create_entity(c)
             except ResourceExistsError:
-                e = table.get_entity(str(coin).title(), "")
+                e = table.get_entity(coin_name_fix(coin), "")
                 logging.warning(f"Entity already existed: {e}")
-                table.delete_entity(str(coin).title(), "")
+                table.delete_entity(coin_name_fix(coin), "")
                 table.create_entity(c)
