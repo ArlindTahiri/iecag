@@ -1,5 +1,6 @@
 ﻿@page "/Error"
 @using System.Diagnostics
+@inject TelemetryClient telemetryClient
 
 <PageTitle>Error</PageTitle>
 
@@ -27,6 +28,12 @@
 @code{
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        telemetryClient.TrackPageView("Error");
+        await telemetryClient.FlushAsync(CancellationToken.None);
+    }
 
     private string? RequestId { get; set; }
     private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);

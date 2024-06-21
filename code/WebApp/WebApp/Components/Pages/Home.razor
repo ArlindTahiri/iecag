@@ -5,6 +5,7 @@
 @implements IAsyncDisposable
 @using Microsoft.Extensions.Options;
 @inject DataFetcherService dataFetcherService;
+@inject TelemetryClient telemetryClient
 
 
 <PageTitle>IeCAG - Cryptocurrencies</PageTitle>
@@ -36,6 +37,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        telemetryClient.TrackPageView("Home");
+        await telemetryClient.FlushAsync(CancellationToken.None);
+
         priceEntries = await dataFetcherService.FetchAllCurrentPrices();
         
 

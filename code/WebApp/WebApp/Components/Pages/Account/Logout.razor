@@ -1,6 +1,8 @@
 ﻿@page "/logout"
 @using Microsoft.AspNetCore.Authentication
 @inject NavigationManager navigationManager
+@inject TelemetryClient telemetryClient
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>IeCAG - Logout</PageTitle>
 
@@ -23,6 +25,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        string username = user.Identity?.Name;
+        telemetryClient.Context.User.Id = username;
+        telemetryClient.TrackPageView("Logout");
+        await telemetryClient.FlushAsync(CancellationToken.None);
+
         await base.OnInitializedAsync();
         if (HttpContext.User.Identity.IsAuthenticated)
         {

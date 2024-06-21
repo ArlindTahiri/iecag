@@ -6,6 +6,7 @@
 @using WebApp.Models.ViewModels
 @inject UserService UserService
 @inject NavigationManager navigationManager
+@inject TelemetryClient telemetryClient
 
 <PageTitle>IeCAG - Login</PageTitle>
 
@@ -47,6 +48,12 @@
     public LoginViewModel Model { get; set; } = new();
 
     private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        telemetryClient.TrackPageView("Login");
+        await telemetryClient.FlushAsync(CancellationToken.None);
+    }
 
     private async Task Authenticate()
     {
