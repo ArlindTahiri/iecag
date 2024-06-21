@@ -6,6 +6,7 @@
 @using WebApp.Models.ViewModels
 @inject UserService UserService
 @inject NavigationManager navigationManager
+@inject TelemetryClient telemetryClient
 
 <PageTitle>IeCAG - Registration</PageTitle>
 
@@ -51,6 +52,12 @@
     private string? errorMessage;
 
     private bool success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        telemetryClient.TrackPageView("Registration");
+        await telemetryClient.FlushAsync(CancellationToken.None);
+    }
 
     private async Task RegisterUser()
     {

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using WebApp.Models.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.ApplicationInsights;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,10 @@ builder.Services.AddRazorComponents()
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
+
+builder.Services.AddApplicationInsightsTelemetry(options => {
+    options.ConnectionString = builder.Configuration.GetConnectionString("ApplicationInsights");
+});
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -40,20 +45,24 @@ builder.Services.AddSingleton<NotificationService>(sp =>
 {
     var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
     var logger = sp.GetRequiredService<ILogger<NotificationService>>();
-    return new NotificationService(connectionString, logger);
+    var telemetryClient = sp.GetRequiredService<TelemetryClient>();
+    return new NotificationService(connectionString, logger, telemetryClient);
 });
 
 builder.Services.AddSingleton<UserService>(sp =>
 {
     var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
     var logger = sp.GetRequiredService<ILogger<UserService>>();
-    return new UserService(connectionString, logger);
+    var telemetryClient = sp.GetRequiredService<TelemetryClient>();
+    return new UserService(connectionString, logger, telemetryClient);
 });
+
 builder.Services.AddSingleton<TransactionService>(sp =>
 {
     var connectionString = builder.Configuration.GetConnectionString("AzureStorage");
     var logger = sp.GetRequiredService<ILogger<TransactionService>>();
-    return new TransactionService(connectionString, logger);
+    var telemetryClient = sp.GetRequiredService<TelemetryClient>();
+    return new TransactionService(connectionString, logger, telemetryClient);
 });
 
 builder.Services.AddResponseCompression(opts =>

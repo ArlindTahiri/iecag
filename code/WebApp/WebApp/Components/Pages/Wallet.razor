@@ -12,6 +12,7 @@
 @inject TransactionService transactionService;
 @inject DataFetcherService dataFetcherService;
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject TelemetryClient telemetryClient
 @using System.Diagnostics
 @using WebApp.Models.ViewModels;
 
@@ -140,6 +141,10 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         username = user.Identity?.Name;
+
+        telemetryClient.Context.User.Id = username;
+        telemetryClient.TrackPageView("Wallet");
+        await telemetryClient.FlushAsync(CancellationToken.None);
 
         coinPrices = await dataFetcherService.FetchAllCurrentPrices();
         cryptocurrencies = coinPrices.Select(coin => coin.PartitionKey).ToList();

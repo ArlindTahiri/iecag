@@ -4,6 +4,7 @@
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 @inject DataFetcherService dataFetcherService
+@inject TelemetryClient telemetryClient
 
 <PageTitle>IeCAG - @Name</PageTitle>
 
@@ -23,6 +24,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        telemetryClient.TrackPageView("Cryptocurrency - "+@Name);
+        await telemetryClient.FlushAsync(CancellationToken.None);
+
         Price = await dataFetcherService.FetchCurrentPrice(Name);
         priceList = await dataFetcherService.FetchPriceOfLastXDays(Name,lastSelectedDays);
 
