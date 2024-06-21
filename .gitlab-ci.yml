@@ -144,7 +144,7 @@ azure_create_resource_group_datatable_appserviceplan_webapp:
     - az storage table create --name $TABLE_TRANSACTIONS --account-name $STORAGE_ACCOUNT || exit 0
     - az storage table create --name $TABLE_NOTIFICATIONS --account-name $STORAGE_ACCOUNT || exit 0
     - echo "Creating Application Insight for webapp"
-    - az monitor app-insights component create --app $APPLICATION_INSIGHTS_NAME --resource-group $RESOURCE_GROUP
+    - az monitor app-insights component create --app $APPLICATION_INSIGHTS_NAME --resource-group $RESOURCE_GROUP --location $AZURE_LOCATION
     - APP_INSIGHTS_CONNECTION_STRING=$(az monitor app-insights component show --app $APPLICATION_INSIGHTS_NAME --resource-group $RESOURCE_GROUP --query connectionString -o tsv)
     - echo "Creating appserviceplan"
     - az appservice plan create --name $APPSERVICE_PLAN_NAME --resource-group $RESOURCE_GROUP --sku F1 || exit 0
