@@ -45,6 +45,9 @@
             });
 
         await hubConnection.StartAsync();
+
+        await priceChart.UpdateChart();
+        StateHasChanged();
     }
 
     private async Task OnTimeRangeChanged(int days)
@@ -52,6 +55,7 @@
         lastSelectedDays = days;
         priceList = await dataFetcherService.FetchPriceOfLastXDays(Name, days);
         await priceChart.UpdateChart();
+        StateHasChanged();
     }
 
     public async ValueTask DisposeAsync()
