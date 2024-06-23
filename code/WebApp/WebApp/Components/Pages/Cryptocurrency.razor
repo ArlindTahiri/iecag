@@ -10,7 +10,7 @@
 
 <h1>@Name at @Price €</h1>
 
-<PriceChart Name="@Name" pricesList="priceList" @ref="priceChart" TimeRangeChanged="OnTimeRangeChanged" _timeRangeInDays="lastSelectedDays"/>
+<PriceChart Name="@Name" @ref="priceChart" TimeRangeChanged="OnTimeRangeChanged" _timeRangeInDays="lastSelectedDays"/>
 <NotificationModal Name="@Name" CurrentPrice="@Price"/>
 
 @code {
@@ -46,7 +46,7 @@
 
         await hubConnection.StartAsync();
 
-        await priceChart.UpdateChart();
+        await priceChart.UpdateChart(priceList);
         StateHasChanged();
     }
 
@@ -54,7 +54,7 @@
     {
         lastSelectedDays = days;
         priceList = await dataFetcherService.FetchPriceOfLastXDays(Name, days);
-        await priceChart.UpdateChart();
+        await priceChart.UpdateChart(priceList);
         StateHasChanged();
     }
 

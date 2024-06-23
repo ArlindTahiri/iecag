@@ -101,10 +101,11 @@
         await JSRuntime.InvokeVoidAsync("updatePriceChart", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
     }
 
-    public async Task UpdateChart()
+    public async Task UpdateChart(List<KeyValuePair<DateTime, double>> tempPricesList)
     {
         if (_isRendered)
         {
+            pricesList = tempPricesList;
             await JSRuntime.InvokeVoidAsync("updatePriceChart", pricesList.Select(kv => kv.Key).ToArray(), pricesList.Select(kv => kv.Value).ToArray());
         }
     }
@@ -130,7 +131,6 @@
     {
         return _timeRangeInDays == days ? "active" : "";
     }
-
 
     [Parameter] public EventCallback<int> TimeRangeChanged { get; set; }
 
@@ -159,5 +159,5 @@
     [Parameter]
     public string Height { get; set; } = "70vh";
 
-    [Parameter] public List<KeyValuePair<DateTime, double>> pricesList { get; set; } = new();
+    public List<KeyValuePair<DateTime, double>> pricesList { get; set; } = new();
 }

@@ -36,7 +36,7 @@
 </div>
 
 <div style="display:flex;">
-    <PriceChart Name="Portfolio" pricesList="priceList" @ref="priceChart" Width="70vw" Height="30vh" TimeRangeChanged="OnTimeRangeChanged" _timeRangeInDays="lastSelecteddays"/>
+    <PriceChart Name="Portfolio" @ref="priceChart" Width="70vw" Height="30vh" TimeRangeChanged="OnTimeRangeChanged" _timeRangeInDays="lastSelecteddays"/>
 
     <DoughnutChart Name="DoughnutChart" DataList="dataList" @ref="doughnutChart" Width="30vw" Height="30vh" />
 </div>
@@ -161,7 +161,7 @@
         stopwatch.Stop();
         Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed.TotalMilliseconds);
 
-        await priceChart.UpdateChart();
+        await priceChart.UpdateChart(priceList);
         await doughnutChart.UpdateChart();
         StateHasChanged();
 
@@ -213,7 +213,7 @@
         allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
         await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, lastSelecteddays);
 
-        await priceChart.UpdateChart();
+        await priceChart.UpdateChart(priceList);
         await doughnutChart.UpdateChart();
         await CloseModalAsync(idOfModal);
         StateHasChanged();
@@ -247,7 +247,7 @@
         allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
 
         await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, days);
-        await priceChart.UpdateChart();
+        await priceChart.UpdateChart(priceList);
         StateHasChanged();
     }
 
@@ -258,7 +258,7 @@
         allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
 
         await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, lastSelecteddays);
-        await priceChart.UpdateChart();
+        await priceChart.UpdateChart(priceList);
         await doughnutChart.UpdateChart();
         StateHasChanged();
     }
