@@ -13,7 +13,24 @@
 
 <script>
     var PriceChart;
-    function createPriceChart (priceChartID, labels, data) {
+    function determineTimeUnit(labels) {
+        const dateRange = (new Date(labels[labels.length - 1]) - new Date(labels[0])) / (1000 * 60 * 60 * 24); // Calculate date range in days
+        if (dateRange <= 1) {
+            return 'hour';
+        } else if (dateRange <= 7) {
+            return 'day';
+        } else if (dateRange <= 30) {
+            return 'week';
+        } else if (dateRange <= 180) {
+            return 'month';
+        } else {
+            return 'year';
+        }
+    }
+
+    function createPriceChart(priceChartID, labels, data) {
+        const timeUnit = determineTimeUnit(labels);
+
         PriceChart = new Chart(document.getElementById(priceChartID), {
             type: 'line',
             data: {
@@ -24,9 +41,11 @@
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderColor: 'rgba(255, 99, 132, 1)',
                     borderWidth: 1,
+                    pointRadius: 0,
+                    pointHoverRadius: 10,
                     trendlineLinear: {
-                        colorMin: "red",
-                        colorMax: "green",
+                        colorMin: "green",
+                        colorMax: "red",
                         lineStyle: "dotted",
                         width: 3
                     }
@@ -34,6 +53,10 @@
             },
             options: {
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 scales: {
                     y: {
                         beginAtZero: false
@@ -41,9 +64,15 @@
                     x: {
                         type: 'time',
                         time: {
-                            unit: 'minute',
+                            unit: timeUnit,
                             displayFormats: {
-                                minute: 'HH:mm'
+                                minute: 'HH:mm',
+                                hour: 'HH:mm',
+                                day: 'MMM DD',
+                                week: 'MMM DD',
+                                month: 'MMM YYYY',
+                                quarter: '[Q]Q - YYYY',
+                                year: 'YYYY'
                             }
                         }
                     }
@@ -55,8 +84,10 @@
         });
     };
 
-    function updatePriceChart (labels, newData) {
+    function updatePriceChart(labels, newData) {
         try {
+            const timeUnit = determineTimeUnit(labels);
+            PriceChart.options.scales.x.time.unit = timeUnit;
             PriceChart.data.labels = labels;
             PriceChart.data.datasets.forEach((dataset) => {
                 dataset.data = newData;
