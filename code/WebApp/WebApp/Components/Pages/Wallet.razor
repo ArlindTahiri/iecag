@@ -155,11 +155,9 @@
 
         allSelectedTransactionsOfUser = allTransactionsOfUser.Where(transaction => transaction.walletName == selectedWallet).ToList();
 
-        Stopwatch stopwatch = new Stopwatch();
-        stopwatch.Start();
+
         await HelperClasses.FinanceCalculations.CalculatePortfolioValueForTheLastXDays(dataFetcherService, walletEntries, priceList, dataList, allSelectedTransactionsOfUser, lastSelecteddays);
-        stopwatch.Stop();
-        Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed.TotalMilliseconds);
+
 
         await priceChart.UpdateChart(priceList);
         await doughnutChart.UpdateChart();
@@ -177,7 +175,7 @@
             {
                 existingEntry.CurrentPrice = price; // Update the price of the existing entry
                 double allValue = walletEntries.Sum(entry => entry.Amount * entry.CurrentPrice);
-                await priceChart.UpdateChart(DateTime.Now, allValue);
+                await priceChart.UpdateChart(DateTimeOffset.Now.LocalDateTime, allValue);
                 await doughnutChart.UpdateChart(name, existingEntry.CurrentPrice * existingEntry.Amount);
             }
             var existingCoinEntry = coinPrices.FirstOrDefault(coin => coin.PartitionKey == name);

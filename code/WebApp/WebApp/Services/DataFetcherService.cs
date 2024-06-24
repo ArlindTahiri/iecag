@@ -52,10 +52,16 @@ namespace WebApp.Services
         
         public async Task FetchCurrentPricesFromAzureTable()
         {
-            // Load all current prices from the Azure Table and send them to all clients
-            await foreach (var entity in _tableClientCurrentPrices.QueryAsync<TableEntity>())
+            var coinPrices = new List<CoinPrice>();
+
+            await foreach (var entity in _tableClientCurrentPrices.QueryAsync<CoinPrice>())
             {
-                await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", entity.PartitionKey, entity["price"]);
+                coinPrices.Add(entity);
+            }
+
+            foreach (var coinPrice in coinPrices)
+            {
+                await _hubContext.Clients.All.SendAsync("ReceivePriceUpdate", coinPrice.PartitionKey, coinPrice.price);
             }
         }
 
@@ -90,7 +96,7 @@ namespace WebApp.Services
             List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
             await foreach (var entity in _tableClientPriceHistory180Days.QueryAsync<CoinPrice>($"PartitionKey eq '{coin}'"))
             {
-                prices.Add(new KeyValuePair<DateTime, double>(entity.PriceDate.DateTime, entity.price));
+                prices.Add(new KeyValuePair<DateTime, double>(entity.PriceDate.LocalDateTime, entity.price));
             }
             prices = prices.OrderBy(x => x.Key).ToList();
             return prices;
@@ -102,7 +108,7 @@ namespace WebApp.Services
             List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
             await foreach (var entity in _tableClientPriceHistory30Days.QueryAsync<CoinPrice>($"PartitionKey eq '{coin}'"))
             {
-                prices.Add(new KeyValuePair<DateTime, double>(entity.PriceDate.DateTime, entity.price));
+                prices.Add(new KeyValuePair<DateTime, double>(entity.PriceDate.LocalDateTime, entity.price));
             }
             prices = prices.OrderBy(x => x.Key).ToList();
             return prices;
@@ -114,7 +120,7 @@ namespace WebApp.Services
             List<KeyValuePair<DateTime, double>> prices = new List<KeyValuePair<DateTime, double>>();
             await foreach (var entity in _tableClientPriceHistory7Days.QueryAsync<CoinPrice>($"PartitionKey eq '{coin}'"))
             {
-                prices.Add(new KeyValuePair<DateTime, double>(entity.PriceDate.DateTime, entity.price));
+                prices.Add(new KeyValuePair<DateTime, double>(entity.PriceDate.LocalDateTime, entity.price));
             }
 
             prices = prices.OrderBy(x => x.Key).ToList();

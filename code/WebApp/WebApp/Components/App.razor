@@ -32,6 +32,11 @@
             }
         }
     </script>
+    <script>
+        window.getUserTimeZone = function () {
+            return Intl.DateTimeFormat().resolvedOptions().timeZone;
+        }
+    </script>
 </body>
 
 </html>

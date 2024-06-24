@@ -38,7 +38,7 @@
             {
                 if (name == Name)
                 {
-                    await priceChart.UpdateChart(DateTime.Now, price);
+                    await priceChart.UpdateChart(DateTimeOffset.Now.LocalDateTime, price);
                     Price = price;
                     InvokeAsync(StateHasChanged);
                 }
