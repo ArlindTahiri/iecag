@@ -43,7 +43,7 @@ variables:
     value: "iecagwrapperAppServicePlan"
   WEBAPP_NAME:
     description: "web app name"
-    value: "iecagweb"
+    value: "iecag"
   WEBAPP_PATH:
     description: "web app path"
     value: "/app.zip"
