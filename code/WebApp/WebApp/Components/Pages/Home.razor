@@ -24,7 +24,12 @@
         @foreach (var priceEntry in priceEntries)
         {
             <tr @onclick="(() => RedirectToCryptocurrency(priceEntry.PartitionKey))" style="cursor: pointer;" title="Click, to see details of @priceEntry.PartitionKey">
-                <td>@priceEntry.PartitionKey</td>
+                <td style="display: flex; align-items: center;">
+                    <img src="@($"/images/{priceEntry.PartitionKey}.png")"
+                         onerror="this.onerror=null;this.src='/images/default.png';"
+                         alt="@priceEntry.PartitionKey"
+                         style="height: 1.5em; width: auto; margin-right: 0.5em;" /> @priceEntry.PartitionKey
+                </td>
                 <td>@priceEntry.price</td>
             </tr>
         }

@@ -96,7 +96,12 @@
                 var priceChange = Math.Round(((walletEntry.CurrentPrice - averagePrice) / averagePrice) * 100, 2);
                 var priceChangeColor = priceChange >= 0 ? "green" : "red";
                 <tr @onclick="(() => RedirectToCryptocurrency(walletEntry.Name))" style="cursor: pointer;" title="Click, to see details of @walletEntry.Name">
-                    <td>@walletEntry.Name</td>
+                    <td style="display: flex; align-items: center;">
+                        <img src="@($"/images/{walletEntry.Name}.png")"
+                             onerror="this.onerror=null;this.src='/images/default.png';"
+                             alt="@walletEntry.Name"
+                             style="height: 1.5em; width: auto; margin-right: 0.5em;" /> @walletEntry.Name
+                    </td>
                     <td>@walletEntry.CurrentPrice</td>
                     <td>@Math.Round(@averagePrice,2)</td>
                     <td style="color:@priceChangeColor">@priceChange %</td>
