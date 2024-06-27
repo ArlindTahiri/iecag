@@ -14,6 +14,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject TelemetryClient telemetryClient
 @using System.Diagnostics
+@using System.Globalization
 @using WebApp.Models.ViewModels;
 
 
@@ -102,10 +103,10 @@
                              alt="@walletEntry.Name"
                              style="height: 1.5em; width: auto; margin-right: 0.5em;" /> @walletEntry.Name
                     </td>
-                    <td>@walletEntry.CurrentPrice</td>
-                    <td>@Math.Round(@averagePrice,5)</td>
+                    <td>@FormatPrice(walletEntry.CurrentPrice)</td>
+                    <td>@FormatPrice(averagePrice)</td>
                     <td style="color:@priceChangeColor">@priceChange %</td>
-                    <td>@Math.Round(walletEntry.Amount,5)</td>
+                    <td>@FormatPrice(walletEntry.Amount)</td>
                     <td>@Math.Round(walletEntry.Amount * walletEntry.CurrentPrice, 2)</td>
                 </tr>
             }
@@ -139,6 +140,22 @@
     private HubConnection? hubConnection;
 
     public List<CoinPrice> coinPrices = new List<CoinPrice>();
+
+    private double FormatPrice(double price)
+    {
+        if (price < 1)
+        {
+            return Math.Round(price, 5);
+        }
+        else if (price < 1000)
+        {
+            return Math.Round(price, 3);
+        }
+        else
+        {
+            return Math.Round(price, 2);
+        }
+    }
 
 
     protected override async Task OnInitializedAsync()
