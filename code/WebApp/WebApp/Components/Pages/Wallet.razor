@@ -103,9 +103,9 @@
                              style="height: 1.5em; width: auto; margin-right: 0.5em;" /> @walletEntry.Name
                     </td>
                     <td>@walletEntry.CurrentPrice</td>
-                    <td>@Math.Round(@averagePrice,2)</td>
+                    <td>@Math.Round(@averagePrice,5)</td>
                     <td style="color:@priceChangeColor">@priceChange %</td>
-                    <td>@walletEntry.Amount</td>
+                    <td>@Math.Round(walletEntry.Amount,5)</td>
                     <td>@Math.Round(walletEntry.Amount * walletEntry.CurrentPrice, 2)</td>
                 </tr>
             }
