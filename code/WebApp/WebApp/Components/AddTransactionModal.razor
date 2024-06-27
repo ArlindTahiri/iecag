@@ -74,6 +74,8 @@
     </div>
 </div>
 
+<ToastNotification Message="@MessageNotification" ToastId="AddTransactionNotificationToast" />
+
 <script>
     var lastInputField;
 
@@ -147,6 +149,8 @@
     private string transactionType = "Buy";
     private string? errorMessage;
 
+    private string MessageNotification { get; set; } = "";
+
     private async Task AddTransaction()
     {
         var walletEntry = walletEntries.FirstOrDefault(sp => sp.Name == transaction.SelectedCryptocurrency);
@@ -168,11 +172,16 @@
 
         await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, transaction.TransactionDate, transactionType, selectedWallet);
 
+        MessageNotification = "Transaction added successfully!";
+        await JSRuntime.InvokeVoidAsync("showToast", "AddTransactionNotificationToast");
         await TransactionAdded.InvokeAsync("#transactionModal");
 
         errorMessage = "";
         transaction = new TransactionModel();
     }
+
+    [Inject]
+    IJSRuntime JSRuntime { get; set; }
 
     private void selectTransactionType(string type)
     {

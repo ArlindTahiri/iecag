@@ -198,10 +198,15 @@
     </div>
 </div>
 
+<ToastNotification Message="@MessageNotification" ToastId="BuySellNotificationToast" />
+
 
 
 @code {
     private double exchangeRate = 0.0;
+
+    [Inject]
+    IJSRuntime JSRuntime { get; set; }
 
     [SupplyParameterFromForm]
     public TransactionModel transaction { get; set; } = new();
@@ -225,6 +230,8 @@
 
     private string transactionType = "Buy";
 
+    private string MessageNotification { get; set; } = "";
+
 
     private async Task AddTransaction()
     {
@@ -233,7 +240,8 @@
 
         await transactionService.CreateTransactionAsync(username, transaction.SelectedCryptocurrency, transaction.Amount, transaction.PricePaidAll, DateTimeOffset.UtcNow, transactionType, selectedWallet);
 
-
+        MessageNotification = $"Transaction for {transactionType}ing {transaction.Amount} {transaction.SelectedCryptocurrency} successful!";
+        await JSRuntime.InvokeVoidAsync("showToast", "BuySellNotificationToast");
         await TransactionAdded.InvokeAsync("#ConfirmConversionModal");
 
         errorMessage = "";
