@@ -21,40 +21,38 @@ def perEmail(req: func.HttpRequest) -> func.HttpResponse:
     storage_account_name = os.getenv('STORAGE_ACCOUNT_NAME')
     storage_account_key = os.getenv('STORAGE_ACCOUNT_KEY')
     table_name = os.getenv('TABLE_NAME')
-    partition_key = os.getenv('PARTITION_KEY')
-    row_key = os.getenv('ROW_KEY')
 
     # Initialisiere den TableService
     table_service = TableService(account_name=storage_account_name, account_key=storage_account_key)
 
     try:
-        # Hole das Entity aus der Tabelle
-        entity = table_service.get_entity(table_name, partition_key, row_key)
-        value = entity.Value  # Wert, der überprüft werden soll
-
+        # Hole alle Entities aus der Tabelle
+        entities = table_service.query_entities(table_name)
+        
         # Definiere den Schwellenwert
         threshold = 1  # Beispielwert
 
-        if value > threshold:
-            # Bereite die E-Mail vor
-            message = Mail(
-                from_email=from_email,
-                to_emails=to_email,
-                subject='Wert überschritten',
-                plain_text_content=f'Der Wert {value} hat den Schwellenwert {threshold} überschritten.'
-            )
+        for entity in entities:
+            partition_key = entity.PartitionKey
+            value = float(entity.price)  # Wert, der überprüft werden soll
 
-            # Sende die E-Mail
-            sg = SendGridAPIClient(sendgrid_api_key)
-            response = sg.send(message)
+            if value > threshold:
+                # Bereite die E-Mail vor
+                message = Mail(
+                    from_email=from_email,
+                    to_emails=to_email,#partition_key,  # E-Mail wird an den PartitionKey (E-Mail-Adresse) gesendet
+                    subject='Wert überschritten',
+                    plain_text_content=f'Der Wert {value} hat den Schwellenwert {threshold} überschritten.'
+                )
 
-            logging.info(f'Email sent: {response.status_code}')
+                # Sende die E-Mail
+                sg = SendGridAPIClient(sendgrid_api_key)
+                response = sg.send(message)
 
-            return func.HttpResponse(f"Email sent successfully. The value {value} exceeded the threshold {threshold}.")
-        else:
-            return func.HttpResponse(f"The value {value} did not exceed the threshold {threshold}. No email sent.")
+                logging.info(f'Email sent to {partition_key}: {response.status_code}')
+
+        return func.HttpResponse("Emails sent successfully if thresholds were exceeded.")
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         return func.HttpResponse(f"An error occurred: {e}", status_code=500)
-
