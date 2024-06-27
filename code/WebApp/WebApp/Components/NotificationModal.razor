@@ -30,11 +30,16 @@
     </div>
 </div>
 
+
+<ToastNotification Message="@NotificationToast" ToastId="NotificationToast" />
+
 @code {
     [Parameter] public string Name { get; set; }
     [Parameter] public double CurrentPrice { get; set; }
     public double NotificationPrice { get; set; }
     public string Email { get; set; }
+
+    public string NotificationToast { get; set; } = "";
 
     private async Task SubmitNotification()
     {
@@ -52,7 +57,13 @@
             await notificationService.CreateNotificationAsync(Email, Name, NotificationPrice, "below");
         }
 
+        NotificationToast = $"Notification for {Name} set successfully at {NotificationPrice}!";
+
         await CloseModalAsync("#notificationModal");
+
+
+        await JSRuntime.InvokeVoidAsync("showToast", "NotificationToast");
+
         Email = "";
         NotificationPrice = 0;
     }

@@ -33,6 +33,13 @@
         }
     </script>
     <script>
+        function showToast(toastId) {
+            var toastEl = document.getElementById(toastId);
+            var toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+    </script>
+    <script>
         window.getUserTimeZone = function () {
             return Intl.DateTimeFormat().resolvedOptions().timeZone;
         }
