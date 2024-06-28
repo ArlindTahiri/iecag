@@ -6,6 +6,22 @@
 ## Description
 A small simulated cryptocurrency trading platform.
 
+## Live-Demo
+IFrame:
+<figure class="video_container">
+  <iframe src="assets/IeCAG_Live-Demo.mp4" frameborder="0" allowfullscreen="true"> 
+</iframe>
+</figure>
+
+Link:
+[Watch the live demo](assets/IeCAG_Live-Demo.mp4)
+
+HTML:
+<video width="600" controls>
+  <source src="assets/IeCAG_Live-Demo.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 ## Visuals
 ![Architectural Design](assets/IeCAG_for_light_theme_nerds.jpg "Architectural Design")
 
