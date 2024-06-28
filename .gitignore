@@ -13,7 +13,6 @@ appsettings.Development.json
 *.userosscache
 *.sln.docstates
 *.exe
-*.mp4
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
