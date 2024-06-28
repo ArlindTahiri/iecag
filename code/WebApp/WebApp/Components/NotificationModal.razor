@@ -55,7 +55,7 @@
             return;
         }
 
-        if (new EmailAddressAttribute().IsValid(Email))
+        if (!new EmailAddressAttribute().IsValid(Email))
         {
             errorMessage = "Please enter a valid email address.";
             return;
