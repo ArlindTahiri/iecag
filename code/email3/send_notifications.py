@@ -4,13 +4,12 @@ import logging
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-def send_email(content):
+def send_email(to_email, content):
     # Setze hier deinen SendGrid API-Schlüssel
     sendgrid_api_key = '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'
     
     # Setze die E-Mail-Parameter
     from_email = 'ladysophie96@gmx.de'
-    to_email = 'sophie.gigl@web.de'
     subject = 'IECAG threshold'
     
     # Erstelle die E-Mail
@@ -25,6 +24,7 @@ def send_email(content):
         # Sende die E-Mail
         sg = SendGridAPIClient(sendgrid_api_key)
         response = sg.send(message)
+        print(f'Sending email to {to_email} with content: {content}')
         print(f'Status Code: {response.status_code}')
         print(f'Body: {response.body}')
         print(f'Headers: {response.headers}')
@@ -62,6 +62,7 @@ def access_azure_table():
             threshold = float(entity.price)  # Schwellenwert, der überprüft werden soll
             trend = entity.trend  # Trend-Wert auslesen
             coin = entity.coin  # Coin-Wert auslesen
+            to_email = partition_key  # E-Mail-Adresse aus PartitionKey
 
             # Vergleiche den Coin mit dem PartitionKey in der currentprices Tabelle
             if coin in values:
@@ -71,25 +72,23 @@ def access_azure_table():
                     message = f'Der Wert {value} der Kryptowährung {coin} hat den Schwellenwert {threshold} überschritten für {partition_key}.'
                     output_messages.append(message)
                     logging.info(message)
-                    to_email= partition_key
-                    send_email(message)
+                    send_email(to_email, message)
                 elif trend == "below" and threshold > value:
                     message = f'Der Wert {value} der Kryptowährung {coin} hat den Schwellenwert {threshold} unterschritten für {partition_key}.'
                     output_messages.append(message)
                     logging.info(message)
-                    to_email=partition_key
-                    send_email(message)
+                    send_email(to_email, message)
 
-        # Rückgabe aller Nachrichten und Senden der E-Mail
+        # Rückgabe aller Nachrichten
         if output_messages:
             return "Values exceeded the threshold."
         else:
-            send_email("No values exceeded the threshold.")
+            send_email('ladysophie96@gmx.de', "No values exceeded the threshold.")
             return "No values exceeded the threshold."
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
-        send_email(f"An error occurred: {e}")
+        send_email('ladysophie96@gmx.de', f"An error occurred: {e}")
         return f"An error occurred: {e}"
 
 if __name__ == "__main__":
