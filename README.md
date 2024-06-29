@@ -49,6 +49,29 @@ A small simulated cryptocurrency trading platform.
   - **Acceptance criteria**:
     - user must be able to create rules like: if "$cryptocurrency" "$price" "is_lower_than" "1337"
 
+## Pipeline Summary
+Default for all azure-cli jobs:
+- Log into Azure using a service principal.
+
+Fire drill (*tilly_nuke*):
+- Deletes the resource group if NUKE is set to true.
+
+Azure Setup using the chonk method (*azure_create_resource_group_datatable_appserviceplan_webapp*):
+- Creates the resource group and storage account.
+- Creates storage tables.
+- Sets up Application Insights.
+- Creates App Service plans and web apps, setting necessary configurations.
+
+Build Web App (*azure_build_webapp*):
+- Builds the .NET web app and packages it into a zip file.
+
+Build Wrapper (*azure_build_wrapper*):
+- Sets up a Python virtual environment, installs dependencies, and packages the API wrapper into a zip file.
+
+Deploy Web Apps (*azure_deploy_webapp*):
+- Deploys the web app and the API wrapper using the zip packages created earlier.
+
+
 ## Roadmap
 - [x] 2024-04-09: Teams and topic defined: A project with the team members was created on GitLab
 - [x] 2024-05-07: Project description, use cases, features are defined and described and checked in on GitLab
