@@ -1,6 +1,35 @@
 import os
 from azure.cosmosdb.table.tableservice import TableService
 import logging
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+def send_email(content):
+    # Setze hier deinen SendGrid API-Schlüssel
+    sendgrid_api_key = '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'
+    
+    # Setze die E-Mail-Parameter
+    from_email = 'ladysophie96@gmx.de'
+    to_email = 'sophie.gigl@web.de'
+    subject = 'IECAG threshold'
+    
+    # Erstelle die E-Mail
+    message = Mail(
+        from_email=from_email,
+        to_emails=to_email,
+        subject=subject,
+        plain_text_content=content
+    )
+    
+    try:
+        # Sende die E-Mail
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        print(f'Status Code: {response.status_code}')
+        print(f'Body: {response.body}')
+        print(f'Headers: {response.headers}')
+    except Exception as e:
+        print(e.message)
 
 def access_azure_table():
     # Azure Table Storage Verbindungsinformationen und Tabellenname aus Umgebungsvariablen
@@ -25,7 +54,7 @@ def access_azure_table():
         # Hole alle Entities aus der currentprices Tabelle
         entities_currentprices = table_service.query_entities(table_name_currentprices)
         
-        # Erstelle ein Dictionary, um Schwellenwerte basierend auf PartitionKey (coin) zu speichern
+        # Erstelle ein Dictionary, um aktuelle Preise basierend auf PartitionKey (coin) zu speichern
         values = {entity.PartitionKey: float(entity.price) for entity in entities_currentprices}
 
         for entity in entities_notifications:
@@ -42,19 +71,25 @@ def access_azure_table():
                     message = f'Der Wert {value} der Kryptowährung {coin} hat den Schwellenwert {threshold} überschritten für {partition_key}.'
                     output_messages.append(message)
                     logging.info(message)
+                    to_email= partition_key
+                    send_email(message)
                 elif trend == "below" and threshold > value:
                     message = f'Der Wert {value} der Kryptowährung {coin} hat den Schwellenwert {threshold} unterschritten für {partition_key}.'
                     output_messages.append(message)
                     logging.info(message)
+                    to_email=partition_key
+                    send_email(message)
 
-        # Rückgabe aller Nachrichten
+        # Rückgabe aller Nachrichten und Senden der E-Mail
         if output_messages:
-            return "\n".join(output_messages)
+            return "Values exceeded the threshold."
         else:
+            send_email("No values exceeded the threshold.")
             return "No values exceeded the threshold."
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
+        send_email(f"An error occurred: {e}")
         return f"An error occurred: {e}"
 
 if __name__ == "__main__":
