@@ -8,7 +8,12 @@
 
 <PageTitle>IeCAG - @Name</PageTitle>
 
-<h1>@Name at @Price €</h1>
+<h1>
+    <img src="@($"/images/{Name}.png")"
+         onerror="this.onerror=null;this.src='/images/default.png';"
+         alt="@Name"
+         style="width: auto; height: 1.5em" /> @Name at @Price €
+</h1>
 
 <PriceChart Name="@Name" @ref="priceChart" TimeRangeChanged="OnTimeRangeChanged" _timeRangeInDays="lastSelectedDays"/>
 <NotificationModal Name="@Name" CurrentPrice="@Price"/>
