@@ -1,8 +1,8 @@
 import os
 import requests
 from flask import Flask, jsonify
-from azure.data.tables import TableServiceClient
-from datetime import datetime
+from azure.data.tables import TableServiceClient, TableTransactionError
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -148,6 +148,31 @@ def check_all():
         return jsonify(all_info)
     except Exception as e:
         app.logger.error(f"Error in check_all endpoint: {e}")
+        return jsonify({"error": str(e)}), 500
+
+def delete_old_logs():
+    try:
+        two_hours_ago = datetime.utcnow() - timedelta(hours=2)
+        old_entities = []
+        for entity in logs_table_client.list_entities():
+            check_time = datetime.fromisoformat(entity["CheckTime"])
+            if check_time < two_hours_ago:
+                old_entities.append(entity)
+        
+        for entity in old_entities:
+            logs_table_client.delete_entity(entity["PartitionKey"], entity["RowKey"])
+        return len(old_entities)
+    except Exception as e:
+        app.logger.error(f"Error deleting old logs: {e}")
+        raise
+
+@app.route('/delete_old_logs', methods=['DELETE'])
+def delete_old_logs_endpoint():
+    try:
+        deleted_count = delete_old_logs()
+        return jsonify({"deleted_count": deleted_count})
+    except Exception as e:
+        app.logger.error(f"Error in delete_old_logs endpoint: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
