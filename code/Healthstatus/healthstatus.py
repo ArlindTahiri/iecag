@@ -117,5 +117,38 @@ def check_all_tables():
         app.logger.error(f"Error in check_all_tables endpoint: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/check_all', methods=['GET'])
+def check_all():
+    try:
+        all_info = {"apps": [], "tables": []}
+        check_time = datetime.utcnow()
+
+        # Überprüfen Sie die Verfügbarkeit der Apps
+        for app in apps:
+            app_name = app["name"]
+            app_url = app["url"]
+            app_type = app["type"]
+            is_available = check_availability(app_url)
+            all_info["apps"].append({"app_name": app_name, "app_type": app_type, "is_available": is_available, "check_time": check_time.isoformat()})
+            log_app_info(app_name, app_type, is_available, check_time)
+
+        # Überprüfen Sie die Tabellen
+        for table in list_tables():
+            table_name = table.name
+            try:
+                row_count = count_table_rows(table_name)
+                is_available = True
+            except Exception as e:
+                app.logger.error(f"Error checking table {table_name}: {e}")
+                row_count = 0
+                is_available = False
+            all_info["tables"].append({"table_name": table_name, "row_count": row_count, "is_available": is_available, "check_time": check_time.isoformat()})
+            log_table_info(table_name, row_count, check_time)
+
+        return jsonify(all_info)
+    except Exception as e:
+        app.logger.error(f"Error in check_all endpoint: {e}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
