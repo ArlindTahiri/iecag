@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 subscription_id = '409d7a11-b871-4827-8e32-43801826897e'
 resource_group_name = "IeCAG-INFCA"
-connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+connection_string = "DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName=iecagstorage;AccountKey=BRwtv3f9inw7XtCPxsXr2ALqcg7eBaMzs6HvsgkY6CC8DCF7tjJ/NEb3edd8nSxzKT3Ph6M6+EqN+AStoxIzYA==;BlobEndpoint=https://iecagstorage.blob.core.windows.net/;FileEndpoint=https://iecagstorage.file.core.windows.net/;QueueEndpoint=https://iecagstorage.queue.core.windows.net/;TableEndpoint=https://iecagstorage.table.core.windows.net/"
 
 if not subscription_id or not resource_group_name or not connection_string:
     raise ValueError("Azure subscription ID, resource group name, or storage connection string is not set in the environment variables.")
