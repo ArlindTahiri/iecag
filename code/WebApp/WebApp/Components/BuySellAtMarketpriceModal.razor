@@ -235,6 +235,10 @@
 
     private async Task AddTransaction()
     {
+        if(errorMessage != "")
+        {
+            return;
+        }
 
         transaction.TransactionDate = DateTime.Now;
 
@@ -281,6 +285,21 @@
         if (string.IsNullOrWhiteSpace(selectedWallet))
         {
             errorMessage = "Please select a wallet";
+            return;
+        }
+        if (string.IsNullOrEmpty(transaction.SelectedCryptocurrency))
+        {
+            errorMessage = "Please select a cryptocurrency";
+            return;
+        }
+        if(transaction.Amount <= 0)
+        {
+            errorMessage = "Amount must be greater than 0";
+            return;
+        }
+        if(transaction.PricePaidAll <= 0)
+        {
+            errorMessage = "Price must be greater than 0";
             return;
         }
 
