@@ -72,6 +72,10 @@ Deploy Web Apps (*azure_deploy_webapp*):
 - Deploys the web app and the API wrapper using the zip packages created earlier.
 
 
+## Costs
+![Costs](assets/iecag_real_costs.png)
+
+
 ## Roadmap
 - [x] 2024-04-09: Teams and topic defined: A project with the team members was created on GitLab
 - [x] 2024-05-07: Project description, use cases, features are defined and described and checked in on GitLab
