@@ -220,11 +220,14 @@ azure_deploy_webapp:
 
 azure_notifications:
   stage: azure_setup
+  image: python:3.11
   allow_failure: true
   needs:
     - azure_deploy_webapp
   script:
     - echo "Setup notifications"
+    - az functionapp create --resource-group AzureFunctionsQuickstart-rg --consumption-plan-location westus --runtime dotnet-isolated --functions-version 4 --name HealthAndPrice --storage-account $STORAGE_ACCOUNT || exit 0
+    
 
 #build_api_wrapper:
 #  stage: azure_setup
