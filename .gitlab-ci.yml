@@ -220,7 +220,6 @@ azure_deploy_webapp:
 
 azure_notifications:
   stage: azure_setup
-  image: python:3.10
   allow_failure: true
   needs:
     - azure_deploy_webapp
