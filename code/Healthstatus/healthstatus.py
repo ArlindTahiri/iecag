@@ -7,8 +7,7 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 
 # Umgebungsvariablen abrufen
-connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING", "DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName=iecagstorage;AccountKey=BRwtv3f9inw7XtCPxsXr2ALqcg7eBaMzs6HvsgkY6CC8DCF7tjJ/NEb3edd8nSxzKT3Ph6M6+EqN+AStoxIzYA==;BlobEndpoint=https://iecagstorage.blob.core.windows.net/;FileEndpoint=https://iecagstorage.file.core.windows.net/;QueueEndpoint=https://iecagstorage.queue.core.windows.net/;TableEndpoint=https://iecagstorage.table.core.windows.net/")
-
+connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 if not connection_string:
     raise ValueError("Azure Storage connection string is not set in the environment variables.")
 else:
