@@ -68,6 +68,9 @@ variables:
   SENDGRID_API_KEY:
     description: "sendgrid api key"
     value: ""
+  AZURE_HEALTHCHECKFUNCTION_APP_NAME:
+    description: "azure healthcheck function app name"
+    value: "iecagHealthCheckFunction"
 
 
 stages:
@@ -227,6 +230,18 @@ azure_notifications:
     - echo "Setup notifications"
     - az functionapp create --resource-group $RESOURCE_GROUP --consumption-plan-location westus --os-type linux --runtime python --runtime-version 3.10 --functions-version 4 --name HealthAndPrice --storage-account $STORAGE_ACCOUNT || exit 0
     
+
+azure_functions:
+  stage: azure_setup
+  allow_failure: true
+  needs:
+    - azure_create_resource_group_datatable_appserviceplan_webapp
+  script:
+    - echo "Setup healthcheck function"
+    - az functionapp create --resource-group $RESOURCE_GROUP --consumption-plan-location $AZURE_LOCATION --runtime dotnet --functions-version 4 --name $AZURE_HEALTHCHECKFUNCTION_APP_NAME --storage-account $STORAGE_ACCOUNT || exit 0
+    - az functionapp config appsettings set --name $AZURE_HEALTHCHECKFUNCTION_APP_NAME --resource-group $RESOURCE_GROUP --settings RESOURCE_ENDPOINTS="$WEBAPP_NAME.azurewebsites.net;$WRAPPER_CONTAINER_NAME.azurewebsites.net;$STORAGE_ACCOUNT.blob.core.windows.net"
+    - cd code/HealthCheck/HealthCheckFunction/HealthCheckFunction/
+    - func azure functionapp publish $AZURE_HEALTHCHECKFUNCTION_APP_NAME || exit 0
 
 #build_api_wrapper:
 #  stage: azure_setup
