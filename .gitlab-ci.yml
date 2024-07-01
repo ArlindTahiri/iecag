@@ -243,7 +243,7 @@ azure_functions:
     - az functionapp create --resource-group $RESOURCE_GROUP --consumption-plan-location $AZURE_LOCATION --runtime dotnet --functions-version 4 --name $AZURE_HEALTHCHECKFUNCTION_APP_NAME --storage-account $STORAGE_ACCOUNT || exit 0
     - az functionapp config appsettings set --name $AZURE_HEALTHCHECKFUNCTION_APP_NAME --resource-group $RESOURCE_GROUP --settings RESOURCE_ENDPOINTS="$WEBAPP_NAME.azurewebsites.net;$WRAPPER_CONTAINER_NAME.azurewebsites.net;$STORAGE_ACCOUNT.blob.core.windows.net"
     - cd code/HealthCheck/HealthCheckFunction/HealthCheckFunction/
-    - func azure functionapp publish $AZURE_HEALTHCHECKFUNCTION_APP_NAME || exit 0
+    - func azure functionapp publish $AZURE_HEALTHCHECKFUNCTION_APP_NAME --dotnet-isolated || exit 0
 
 #build_api_wrapper:
 #  stage: azure_setup
