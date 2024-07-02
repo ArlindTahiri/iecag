@@ -25,8 +25,7 @@ except Exception as e:
 apps = [
     {"name": "APIWrapper", "url": "https://iecagapiwrapper.azurewebsites.net/", "type": "Web App"},
     {"name": "iecag", "url": "https://iecag.azurewebsites.net/", "type": "Web App"},
-    # Fügen Sie hier weitere Apps und Funktionen hinzu
-    # {"name": "MyFunctionApp1", "url": "https://myfunctionapp1.azurewebsites.net/api/healthcheck", "type": "Function"},
+    {"name": "iecagHealthCheckFunction", "url": "https://iecaghealthcheckfunction.azurewebsites.net", "type": "Function"}
 ]
 
 def check_availability(url):
