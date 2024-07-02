@@ -65,9 +65,9 @@ variables:
   APPLICATION_INSIGHTS_NAME:
     description: "application insights name"
     value: "iecagAppServiceApplicationInsights"
-  SENDGRID_API_KEY:
-    description: "sendgrid api key"
-    value: ""
+  FUNCTION_NAME_SENDGRID_API:
+    description: "function name for send_messages"
+    value: "send_messages"
   AZURE_HEALTHCHECKFUNCTION_APP_NAME:
     description: "azure healthcheck function app name"
     value: "iecagHealthCheckFunction"
@@ -229,6 +229,7 @@ azure_notifications:
   script:
     - echo "Setup notifications"
     - az functionapp create --resource-group $RESOURCE_GROUP --consumption-plan-location westus --os-type linux --runtime python --runtime-version 3.10 --functions-version 4 --name HealthAndPrice --storage-account $STORAGE_ACCOUNT || exit 0
+    - az functionapp cors add -g $RESOURCE_GROUP -n HealthAndPrice --allowed-origins https://portal.azure.com || exit 0
     
 
 azure_functions:
