@@ -9,6 +9,9 @@ A small simulated cryptocurrency trading platform.
 ## Live-Demo
 ![Live-Demo](https://inf-git.fh-rosenheim.de/inf-ca/sose2024/iecag/-/blob/main/assets/IeCAG_Live-Demo.mp4)
 
+## Presentation
+[Präsentation](https://inf-git.fh-rosenheim.de/inf-ca/sose2024/iecag/-/blob/main/assets/CA_IeCAG_presentation.pdf)
+
 ## Visuals
 ![Architectural Design](assets/IeCAG_for_light_theme_nerds.jpg "Architectural Design")
 
