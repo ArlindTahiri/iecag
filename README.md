@@ -74,6 +74,8 @@ Deploy Web Apps (*azure_deploy_webapp*):
 
 ## Costs
 ![Costs](assets/iecag_real_costs.png)
+![Costsp2](assets/Costs/KostenFolie.png)
+![Scaling](assets/Costs/Scaling.png)
 
 
 
