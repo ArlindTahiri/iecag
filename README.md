@@ -74,6 +74,8 @@ Deploy Web Apps (*azure_deploy_webapp*):
 
 ## Costs
 ![Costs](assets/iecag_real_costs.png)
+![StorageCosts](url)
+![Scaling]()
 
 
 ## Roadmap
@@ -85,9 +87,9 @@ Deploy Web Apps (*azure_deploy_webapp*):
 ## Division of Duties
 | Ruf, Lukas              | Tahiri, Arlind             | Gigl, Soph            |
 | ------                  | ------                     | ------                |
-|    CI Pipeline          |    Backend development     |  Logging              |
-|    API Wrapper          |    Frontendent development |  Heartbeat            |
-|    Infrastructure Setup |                            |  Notifications/Alerts |
+|    CI Pipeline          |    Backend development     |  Heartbeat            |
+|    API Wrapper          |    Frontendent development |  Notifications/Alerts |
+|    Infrastructure Setup |                            |                       |
 
 
 ## Authors and acknowledgment
