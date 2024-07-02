@@ -5,5 +5,5 @@
 azure-functions
 azure-data-tables
 requests
-python-dotenv
-
+sendgrid
+azure-cosmosdb-table
