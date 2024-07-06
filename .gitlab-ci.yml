@@ -263,6 +263,8 @@ azure_functions:
     - ./dotnet-install.sh -c 8.0 --install-dir /usr/share/dotnet
     - ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
     - az functionapp create --resource-group $RESOURCE_GROUP --consumption-plan-location $AZURE_LOCATION --runtime dotnet --functions-version 4 --name $AZURE_HEALTHCHECKFUNCTION_APP_NAME --storage-account $STORAGE_ACCOUNT || exit 0
+    - echo "Waiting time of 30 seconds, to be certain that the App Service Plan EastPlanUS was created"
+    - sleep 30
     - az functionapp config appsettings set --name $AZURE_HEALTHCHECKFUNCTION_APP_NAME --resource-group $RESOURCE_GROUP --settings RESOURCE_ENDPOINTS="$WEBAPP_NAME.azurewebsites.net;$WRAPPER_CONTAINER_NAME.azurewebsites.net;$STORAGE_ACCOUNT.blob.core.windows.net"
     - cd code/HealthCheck/HealthCheckFunction/HealthCheckFunction/
     - func azure functionapp publish $AZURE_HEALTHCHECKFUNCTION_APP_NAME --dotnet-isolated || exit 0
