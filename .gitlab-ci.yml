@@ -87,6 +87,8 @@ default:
 
 tilly_nuke:
   stage: azure_setup
+  tags:
+    - lab02
   image: inf-docker.fh-rosenheim.de/inf-ca/sose2024/iecag/azure-cli
   allow_failure: true
   script:
@@ -97,6 +99,8 @@ tilly_nuke:
 
 terraform:
   stage: deploy
+  tags:
+    - lab02
   image: 
     name: hashicorp/terraform:latest
     entrypoint:
@@ -129,6 +133,8 @@ terraform:
 # Not pretty, but practical: the docker executor takes too long to run the setup in separate steps
 azure_create_resource_group_datatable_appserviceplan_webapp:
   stage: azure_setup
+  tags:
+    - lab02
   allow_failure:
     exit_codes:
       - 0
@@ -176,6 +182,8 @@ azure_create_resource_group_datatable_appserviceplan_webapp:
 
 azure_build_webapp:
   stage: azure_setup
+  tags:
+    - lab02
   image: mcr.microsoft.com/dotnet/sdk:8.0
   before_script:
     - echo "Building webapp"
@@ -194,6 +202,8 @@ azure_build_webapp:
 
 azure_build_wrapper:
   stage: azure_setup
+  tags:
+    - lab02
   image: python:3.10
   before_script:
     - echo "Building wrapper"
@@ -212,6 +222,8 @@ azure_build_wrapper:
 
 azure_deploy_webapp:
   stage: azure_setup
+  tags:
+    - lab02
   allow_failure: true
   needs:
     - azure_create_resource_group_datatable_appserviceplan_webapp
@@ -223,6 +235,8 @@ azure_deploy_webapp:
 
 azure_notifications:
   stage: azure_setup
+  tags:
+    - lab02
   allow_failure: true
   needs:
     - azure_deploy_webapp
@@ -234,6 +248,8 @@ azure_notifications:
 
 azure_functions:
   stage: azure_setup
+  tags:
+    - lab02
   allow_failure: true
   needs:
     - azure_create_resource_group_datatable_appserviceplan_webapp
